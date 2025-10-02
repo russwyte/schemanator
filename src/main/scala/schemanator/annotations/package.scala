@@ -4,7 +4,7 @@ package schemanator
  * JSON Schema annotations for enhancing ZIO Schema with JSON Schema Draft 2020-12 features.
  *
  * This package provides annotations organized by category:
- * - Field annotations: readOnly, writeOnly, deprecated, examples
+ * - Field annotations: readOnly, writeOnly, deprecated, examples, requiredField
  * - String annotations: format, stringEnum
  * - Numeric annotations: multipleOf, minimum, maximum
  * - Array annotations: minItems, maxItems, contains

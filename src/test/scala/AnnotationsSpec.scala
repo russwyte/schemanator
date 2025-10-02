@@ -426,5 +426,62 @@ object AnnotationsSpec extends ZIOSpecDefault:
           assertTrue(hasItemsBounds)
         case _ => assertTrue(false)
     },
+    test("supports @requiredField annotation on optional fields") {
+      case class Request(
+        name: String,
+        age: Int,
+        email: Option[String],
+        @requiredField description: Option[String],
+        @requiredField tags: Option[List[String]]
+      ) derives Schema
+
+      val jsonSchema = Schema[Request].jsonSchemaAst
+
+      jsonSchema match
+        case Json.Obj(fields) =>
+          val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
+
+          // Check required array includes name, age, description, and tags, but NOT email
+          val hasCorrectRequired = fieldsWithoutSchema.collectFirst {
+            case ("required", Json.Arr(items)) =>
+              val requiredFields = items.collect { case Json.Str(name) => name }
+              requiredFields.contains("name") &&
+              requiredFields.contains("age") &&
+              !requiredFields.contains("email") &&
+              requiredFields.contains("description") &&
+              requiredFields.contains("tags")
+          }.getOrElse(false)
+
+          // Check that description has type ["string", "null"]
+          val hasNullableDescriptionType = fieldsWithoutSchema.collectFirst {
+            case ("properties", Json.Obj(props)) =>
+              props.exists {
+                case ("description", Json.Obj(descFields)) =>
+                  descFields.exists {
+                    case ("type", Json.Arr(types)) =>
+                      types.contains(Json.Str("string")) && types.contains(Json.Str("null"))
+                    case _ => false
+                  }
+                case _ => false
+              }
+          }.getOrElse(false)
+
+          // Check that tags has type ["array", "null"]
+          val hasNullableArrayType = fieldsWithoutSchema.collectFirst {
+            case ("properties", Json.Obj(props)) =>
+              props.exists {
+                case ("tags", Json.Obj(tagFields)) =>
+                  tagFields.exists {
+                    case ("type", Json.Arr(types)) =>
+                      types.contains(Json.Str("array")) && types.contains(Json.Str("null"))
+                    case _ => false
+                  }
+                case _ => false
+              }
+          }.getOrElse(false)
+
+          assertTrue(hasCorrectRequired && hasNullableDescriptionType && hasNullableArrayType)
+        case _ => assertTrue(false)
+    },
   )
 end AnnotationsSpec
