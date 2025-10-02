@@ -71,7 +71,7 @@ A comprehensive JSON Schema generator for ZIO Schema that converts Scala 3 types
 Add to your `build.sbt`:
 
 ```scala
-libraryDependencies += "io.github.russwyte" %% "schemanator" % "0.0.1"
+libraryDependencies += "io.github.russwyte" %% "schemanator" % "0.0.2"
 ```
 
 ## Usage
