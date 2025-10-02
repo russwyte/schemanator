@@ -34,6 +34,7 @@ A comprehensive JSON Schema generator for ZIO Schema that converts Scala 3 types
 - `@defaultValue(value)` - **Type-safe default values** (recommended)
 - `@fieldDefaultValue(value)` - Default values (type-erased, for compatibility)
 - `@transientField` - Exclude fields from schema
+- `@requiredField` - Force optional fields to appear in required array (for APIs like OpenAI)
 - `@description("text")` - Add documentation to types and fields
 - `@readOnly` - Mark fields as read-only
 - `@writeOnly` - Mark fields as write-only
@@ -70,7 +71,7 @@ A comprehensive JSON Schema generator for ZIO Schema that converts Scala 3 types
 Add to your `build.sbt`:
 
 ```scala
-libraryDependencies += "io.github.russwyte" %% "schemanator" % "0.1.0-SNAPSHOT"
+libraryDependencies += "io.github.russwyte" %% "schemanator" % "0.0.1"
 ```
 
 ## Usage
@@ -180,6 +181,31 @@ case class Contact(
   @format("uri") website: String,
   @stringEnum("active", "inactive", "pending") status: String
 ) derives Schema
+```
+
+#### Required Optional Fields
+
+Some APIs (like OpenAI) require optional fields to be listed in the required array with nullable types. Use `@requiredField` to force an `Option[T]` field into the required list with a nullable type:
+
+```scala
+import schemanator.annotations.*
+
+case class OpenAIRequest(
+  name: String,
+  @requiredField description: Option[String],
+  @requiredField tags: Option[List[String]]
+) derives Schema
+
+// Generates:
+// {
+//   "type": "object",
+//   "properties": {
+//     "name": { "type": "string" },
+//     "description": { "type": ["string", "null"] },
+//     "tags": { "type": ["array", "null"], "items": { "type": "string" } }
+//   },
+//   "required": ["name", "description", "tags"]
+// }
 ```
 
 #### Enums with Discriminators

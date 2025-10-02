@@ -54,3 +54,19 @@ case class exampleValues[A: Schema](values: A*) extends StaticAnnotation:
   */
 case class defaultValue[A: Schema](value: A) extends StaticAnnotation:
   def schema: Schema[A] = summon[Schema[A]]
+
+/** Forces an optional field to appear in the required array.
+  *
+  * Some APIs (e.g., OpenAI) require optional fields to be listed in the required array.
+  * This annotation overrides the default behavior where Option[T] fields are excluded
+  * from the required list.
+  *
+  * Example:
+  * {{{
+  *   case class Request(
+  *     name: String,
+  *     @requiredField email: Option[String]  // Will appear in required array
+  *   ) derives Schema
+  * }}}
+  */
+case class requiredField() extends StaticAnnotation

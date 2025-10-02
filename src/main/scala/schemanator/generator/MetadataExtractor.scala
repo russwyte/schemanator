@@ -39,7 +39,8 @@ private[schemanator] object MetadataExtractor:
         metadata = metadata + ("examples" -> Json.Arr(ex.values.map(Utilities.jsonFromAny)*))
       case exVals: exampleValues[?] =>
         // Type-safe examples with schema - proper encoding
-        metadata = metadata + ("examples" -> Json.Arr(exVals.values.map(v => Utilities.jsonFromValue(v)(using exVals.schema))*))
+        metadata =
+          metadata + ("examples" -> Json.Arr(exVals.values.map(v => Utilities.jsonFromValue(v)(using exVals.schema))*))
       case fmt: format =>
         metadata = metadata + ("format" -> Json.Str(fmt.formatType))
       case mult: multipleOf =>

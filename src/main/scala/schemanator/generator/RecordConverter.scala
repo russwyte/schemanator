@@ -21,7 +21,15 @@ private[schemanator] object RecordConverter:
       val fields = record.fields
         .filter(Utilities.shouldIncludeField)
         .map { field =>
-          val fieldSchema = TypeConverters.schemaToJsonSchema(field.schema, ctx)
+          // Check if this is an optional field with @requiredField
+          val isRequiredOptional = Utilities.isOptional(field.schema) && Utilities.hasRequiredAnnotation(field)
+
+          val fieldSchema = if isRequiredOptional then
+            // For optional fields marked as required, make the type nullable
+            Utilities.makeNullable(TypeConverters.schemaToJsonSchema(Utilities.unwrapOptional(field.schema), ctx))
+          else
+            TypeConverters.schemaToJsonSchema(field.schema, ctx)
+
           var fieldSchemaWithMetadata = MetadataExtractor.addMetadata(fieldSchema, field.annotations)
 
           // Add default value from field if it comes from @fieldDefaultValue annotation
@@ -49,7 +57,7 @@ private[schemanator] object RecordConverter:
       val required = record.fields
         .filter(Utilities.shouldIncludeField)
         .collect {
-          case field if !Utilities.isOptional(field.schema) =>
+          case field if !Utilities.isOptional(field.schema) || Utilities.hasRequiredAnnotation(field) =>
             Json.Str(Utilities.getFieldName(field))
         }
 

@@ -75,6 +75,36 @@ private[schemanator] object Utilities:
       case Schema.Lazy(schema0)  => isOptional(schema0())
       case _                     => false
 
+  /** Unwrap an Optional schema to get the inner schema */
+  def unwrapOptional(schema: Schema[?]): Schema[?] =
+    schema match
+      case Schema.Optional(inner, _) => inner
+      case Schema.Lazy(schema0)      => unwrapOptional(schema0())
+      case _                         => schema
+
+  /** Make a JSON schema nullable by converting type to ["actualType", "null"] */
+  def makeNullable(jsonSchema: Json): Json =
+    jsonSchema match
+      case Json.Obj(fields) =>
+        fields.find(_._1 == "type") match
+          case Some(("type", Json.Str(typeStr))) =>
+            // Replace single type with array of [type, "null"]
+            val newFields = fields.map {
+              case ("type", _) => "type" -> Json.Arr(Json.Str(typeStr), Json.Str("null"))
+              case other => other
+            }
+            Json.Obj(newFields*)
+          case Some(("type", Json.Arr(_))) =>
+            // Already an array type, don't modify (edge case)
+            jsonSchema
+          case Some(_) =>
+            // Unexpected type value, return as-is
+            jsonSchema
+          case None =>
+            // No type field, add nullable type
+            Json.Obj((fields :+ ("type" -> Json.Arr(Json.Str("null"))))*)
+      case _ => jsonSchema
+
   /** Get the custom field name from annotations */
   def getFieldName(field: Schema.Field[?, ?]): String =
     field.annotations
@@ -88,6 +118,13 @@ private[schemanator] object Utilities:
     !field.annotations.exists {
       case _: transientField => true
       case _                 => false
+    }
+
+  /** Check if a field has the @requiredField annotation */
+  def hasRequiredAnnotation(field: Schema.Field[?, ?]): Boolean =
+    field.annotations.exists {
+      case _: requiredField => true
+      case _                => false
     }
 
   /** Get custom case name from annotations */
