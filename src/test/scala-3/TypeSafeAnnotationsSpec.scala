@@ -6,7 +6,7 @@ import zio.json.ast.Json
 import schemanator.*
 import schemanator.annotations.*
 
-object TypeSafeAnnotationsSpec extends ZIOSpecDefault:
+object TypeSafeAnnotationsSpec extends ZIOSpecDefault {
 
   def spec = suite("TypeSafeAnnotations")(
     suite("@defaultValue")(
@@ -18,7 +18,7 @@ object TypeSafeAnnotationsSpec extends ZIOSpecDefault:
 
       val jsonSchema = Schema[Config].jsonSchemaAst
 
-      jsonSchema match
+      jsonSchema match {
         case Json.Obj(fields) =>
           val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
           val propsOpt = fieldsWithoutSchema.collectFirst {
@@ -49,6 +49,7 @@ object TypeSafeAnnotationsSpec extends ZIOSpecDefault:
 
           assertTrue(hasCorrectDefaults)
         case _ => assertTrue(false)
+      }
     },
     test("supports @defaultValue with complex types") {
       case class ServerConfig(
@@ -58,7 +59,7 @@ object TypeSafeAnnotationsSpec extends ZIOSpecDefault:
 
       val jsonSchema = Schema[ServerConfig].jsonSchemaAst
 
-      jsonSchema match
+      jsonSchema match {
         case Json.Obj(fields) =>
           val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
           val propsOpt = fieldsWithoutSchema.collectFirst {
@@ -94,6 +95,7 @@ object TypeSafeAnnotationsSpec extends ZIOSpecDefault:
 
           assertTrue(hasProtocolsDefault && hasSettingsDefault)
         case _ => assertTrue(false)
+      }
     },
     test("supports @defaultValue with nested case classes") {
       case class Address(city: String, country: String) derives Schema
@@ -104,7 +106,7 @@ object TypeSafeAnnotationsSpec extends ZIOSpecDefault:
 
       val jsonSchema = Schema[Person].jsonSchemaAst
 
-      jsonSchema match
+      jsonSchema match {
         case Json.Obj(fields) =>
           val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
           val propsOpt = fieldsWithoutSchema.collectFirst {
@@ -126,6 +128,7 @@ object TypeSafeAnnotationsSpec extends ZIOSpecDefault:
 
           assertTrue(hasAddressDefault)
         case _ => assertTrue(false)
+      }
     },
     ),
     suite("@exampleValues")(
@@ -136,7 +139,7 @@ object TypeSafeAnnotationsSpec extends ZIOSpecDefault:
 
         val jsonSchema = Schema[Color].jsonSchemaAst
 
-        jsonSchema match
+        jsonSchema match {
           case Json.Obj(fields) =>
             val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
             val hasExamples = fieldsWithoutSchema.collectFirst {
@@ -157,6 +160,7 @@ object TypeSafeAnnotationsSpec extends ZIOSpecDefault:
 
             assertTrue(hasExamples)
           case _ => assertTrue(false)
+        }
       },
       test("supports @exampleValues with complex types") {
         case class ApiEndpoint(
@@ -165,7 +169,7 @@ object TypeSafeAnnotationsSpec extends ZIOSpecDefault:
 
         val jsonSchema = Schema[ApiEndpoint].jsonSchemaAst
 
-        jsonSchema match
+        jsonSchema match {
           case Json.Obj(fields) =>
             val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
             val hasExamples = fieldsWithoutSchema.collectFirst {
@@ -186,6 +190,7 @@ object TypeSafeAnnotationsSpec extends ZIOSpecDefault:
 
             assertTrue(hasExamples)
           case _ => assertTrue(false)
+        }
       },
       test("supports @exampleValues with nested case classes") {
         case class Point(x: Int, y: Int) derives Schema
@@ -195,7 +200,7 @@ object TypeSafeAnnotationsSpec extends ZIOSpecDefault:
 
         val jsonSchema = Schema[Shape].jsonSchemaAst
 
-        jsonSchema match
+        jsonSchema match {
           case Json.Obj(fields) =>
             val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
             val hasExamples = fieldsWithoutSchema.collectFirst {
@@ -215,7 +220,8 @@ object TypeSafeAnnotationsSpec extends ZIOSpecDefault:
 
             assertTrue(hasExamples)
           case _ => assertTrue(false)
+        }
       },
     ),
   )
-end TypeSafeAnnotationsSpec
+}

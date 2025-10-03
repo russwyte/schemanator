@@ -8,7 +8,7 @@ import zio.schema.codec.JsonCodec
 import zio.json.ast.Json
 import schemanator.annotations.*
 
-private[schemanator] object Utilities:
+private[schemanator] object Utilities {
 
   /** Convert a typed value to JSON using ZIO Schema's JsonCodec.
     *
@@ -29,20 +29,21 @@ private[schemanator] object Utilities:
     *   // Json.Arr(Json.Num(1), Json.Num(2), Json.Num(3))
     * }}}
     */
-  private[schemanator] def jsonFromValue[A: Schema as schema](value: A): Json =
-    try
+  private[schemanator] def jsonFromValue[A](value: A)(implicit schema: Schema[A]): Json =
+    try {
       // Use zio-schema-json codec to encode the value
       val enc     = JsonCodec.jsonCodec(schema)
       val encoded = enc.encoder.toJsonAST(value)
-      encoded match
+      encoded match {
         case Right(json) => json
         case Left(_)     => jsonFromAny(value)
-    catch case _: Exception => jsonFromAny(value) // todo - we can do better error handling here
+      }
+    } catch { case _: Exception => jsonFromAny(value) } // todo - we can do better error handling here
 
   // only used in cases where we don't have a schema - this is a best-effort conversion for default values, examples, etc.
   // todo: improve handling of complex types (e.g., nested case classes, collections of complex types)
   private[schemanator] def jsonFromAny(value: Any): Json =
-    value match
+    value match {
       case s: String      => Json.Str(s)
       case i: Int         => Json.Num(i)
       case l: Long        => Json.Num(l)
@@ -60,33 +61,37 @@ private[schemanator] object Utilities:
       case set: Set[?]   => Json.Arr(set.toSeq.map(jsonFromAny)*)
       // Fallback to string representation for complex types
       case _ => Json.Str(value.toString)
+    }
 
   /** Extract the schema ID for named types */
   def getSchemaId(schema: Schema[?]): Option[String] =
-    schema match
+    schema match {
       case record: Schema.Record[?] => Some(record.id.name)
       case e: Schema.Enum[?]        => Some(e.id.name)
       case _                        => None
+    }
 
   /** Check if a schema represents an optional field */
   def isOptional(schema: Schema[?]): Boolean =
-    schema match
+    schema match {
       case _: Schema.Optional[?] => true
       case Schema.Lazy(schema0)  => isOptional(schema0())
       case _                     => false
+    }
 
   /** Unwrap an Optional schema to get the inner schema */
   def unwrapOptional(schema: Schema[?]): Schema[?] =
-    schema match
+    schema match {
       case Schema.Optional(inner, _) => inner
       case Schema.Lazy(schema0)      => unwrapOptional(schema0())
       case _                         => schema
+    }
 
   /** Make a JSON schema nullable by converting type to ["actualType", "null"] */
   def makeNullable(jsonSchema: Json): Json =
-    jsonSchema match
+    jsonSchema match {
       case Json.Obj(fields) =>
-        fields.find(_._1 == "type") match
+        fields.find(_._1 == "type") match {
           case Some(("type", Json.Str(typeStr))) =>
             // Replace single type with array of [type, "null"]
             val newFields = fields.map {
@@ -103,7 +108,9 @@ private[schemanator] object Utilities:
           case None =>
             // No type field, add nullable type
             Json.Obj((fields :+ ("type" -> Json.Arr(Json.Str("null"))))*)
+        }
       case _ => jsonSchema
+    }
 
   /** Get the custom field name from annotations */
   def getFieldName(field: Schema.Field[?, ?]): String =
@@ -134,4 +141,4 @@ private[schemanator] object Utilities:
         cName.name
       }
       .getOrElse(case_.id)
-end Utilities
+}

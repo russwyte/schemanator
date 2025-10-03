@@ -1,9 +1,10 @@
 import xerial.sbt.Sonatype.sonatypeCentralHost
 
 val scala3Version    = "3.7.3"
+val scala213Version  = "2.13.16"
 val zioVersion       = "2.1.21"
 val zioSchemaVersion = "1.7.5"
-val zioJsonVersion   = "0.7.3"
+val zioJsonVersion   = "0.7.44"
 usePgpKeyHex("2F64727A87F1BCF42FD307DD8582C4F16659A7D6")
 
 lazy val root = project
@@ -32,13 +33,23 @@ lazy val root = project
         "scm:git@github.com:russwyte/schemanator.git",
       )
     ),
+    crossScalaVersions := Seq(scala213Version, scala3Version),
+    scalacOptions ++= Seq(
+      "-Xsource:3"
+    ),
+    libraryDependencies ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, 13)) => Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value)
+        case _             => Seq.empty
+      }
+    },
     publishMavenStyle      := true,
     pomIncludeRepository   := { _ => false },
     sonatypeCredentialHost := sonatypeCentralHost,
     publishTo              := sonatypePublishToBundle.value,
     versionScheme          := Some("early-semver"),
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio"                   % zioVersion,
+//      "dev.zio" %% "zio"                   % zioVersion,
       "dev.zio" %% "zio-schema"            % zioSchemaVersion,
       "dev.zio" %% "zio-schema-derivation" % zioSchemaVersion,
       "dev.zio" %% "zio-schema-json"       % zioSchemaVersion,

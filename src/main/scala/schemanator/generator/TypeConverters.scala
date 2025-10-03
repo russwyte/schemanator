@@ -5,7 +5,7 @@ import zio.schema.*
 import zio.json.ast.Json
 import scala.collection.mutable
 
-private[schemanator] object TypeConverters:
+private[schemanator] object TypeConverters {
 
   case class Context(
     definitions: mutable.Map[String, Json] = mutable.Map.empty,
@@ -20,43 +20,48 @@ private[schemanator] object TypeConverters:
    * Convert a ZIO Schema to JSON Schema with optional recursion checking.
    * When checkRecursion is false, always generates inline schemas.
    */
-  def schemaToJsonSchema(schema: Schema[?], ctx: Context, checkRecursion: Boolean): Json =
-    if !checkRecursion then
-      return schemaToJsonSchemaInner(schema, ctx)
+  def schemaToJsonSchema(schema: Schema[?], ctx: Context, checkRecursion: Boolean): Json = {
+    if (!checkRecursion) {
+      schemaToJsonSchemaInner(schema, ctx)
+    } else {
+      // Check if this is a named type that might be recursive
+      Utilities.getSchemaId(schema) match {
+        case Some(id) =>
+          // If we're already processing this type, it's recursive - return a $ref
+          if (ctx.inProgress.contains(id)) {
+            // Store a placeholder to mark this as recursive
+            if (!ctx.definitions.contains(id))
+              ctx.definitions(id) = Json.Obj("type" -> Json.Str("object"))
+            Json.Obj("$ref" -> Json.Str(s"#/$$defs/$id"))
+          } else {
+            // Mark as in progress
+            ctx.inProgress.add(id)
 
-    // Check if this is a named type that might be recursive
-    Utilities.getSchemaId(schema) match
-      case Some(id) =>
-        // If we're already processing this type, it's recursive - return a $ref
-        if ctx.inProgress.contains(id) then
-          // Store a placeholder to mark this as recursive
-          if !ctx.definitions.contains(id) then
-            ctx.definitions(id) = Json.Obj("type" -> Json.Str("object"))
-          return Json.Obj("$ref" -> Json.Str(s"#/$$defs/$id"))
+            // Generate the schema
+            val result = schemaToJsonSchemaInner(schema, ctx)
 
-        // Mark as in progress
-        ctx.inProgress.add(id)
+            // Remove from in progress
+            ctx.inProgress.remove(id)
 
-        // Generate the schema
-        val result = schemaToJsonSchemaInner(schema, ctx)
+            // If this type was marked as recursive (definition was added), return a $ref
+            if (ctx.definitions.contains(id)) {
+              // Update the definition with the actual schema
+              ctx.definitions(id) = result
+              Json.Obj("$ref" -> Json.Str(s"#/$$defs/$id"))
+            } else {
+              // Not recursive, return inline
+              result
+            }
+          }
 
-        // Remove from in progress
-        ctx.inProgress.remove(id)
-
-        // If this type was marked as recursive (definition was added), return a $ref
-        if ctx.definitions.contains(id) then
-          // Update the definition with the actual schema
-          ctx.definitions(id) = result
-          Json.Obj("$ref" -> Json.Str(s"#/$$defs/$id"))
-        else
-          // Not recursive, return inline
-          result
-
-      case None =>
-        schemaToJsonSchemaInner(schema, ctx)
+        case None =>
+          schemaToJsonSchemaInner(schema, ctx)
+      }
+    }
+  }
 
   private def schemaToJsonSchemaInner(schema: Schema[?], ctx: Context): Json =
-    schema match
+    schema match {
       case Schema.Primitive(standardType, annotations) =>
         MetadataExtractor.addMetadata(primitiveToJsonSchema(standardType), annotations)
 
@@ -102,10 +107,11 @@ private[schemanator] object TypeConverters:
 
       case _ =>
         Json.Obj("type" -> Json.Str("object"))
+    }
 
   /** Convert primitive types to JSON Schema */
   def primitiveToJsonSchema(standardType: StandardType[?]): Json =
-    standardType match
+    standardType match {
       case StandardType.StringType =>
         Json.Obj("type" -> Json.Str("string"))
       case StandardType.BoolType =>
@@ -158,15 +164,17 @@ private[schemanator] object TypeConverters:
         Json.Obj("type" -> Json.Str("string"))
       case StandardType.UnitType =>
         Json.Obj("type" -> Json.Str("null"))
+    }
 
   /** Convert Either to JSON Schema */
-  def eitherToJsonSchema(either: Schema.Either[?, ?], ctx: Context): Json =
+  def eitherToJsonSchema(either: Schema.Either[?, ?], ctx: Context): Json = {
     val leftSchema = schemaToJsonSchema(either.left, ctx)
     val rightSchema = schemaToJsonSchema(either.right, ctx)
 
     Json.Obj(
       "oneOf" -> Json.Arr(leftSchema, rightSchema)
     )
+  }
 
   /** Flatten nested tuples */
   def flattenTupleSchemas(schemas: List[Schema[?]]): List[Schema[?]] =
@@ -177,7 +185,7 @@ private[schemanator] object TypeConverters:
     }
 
   /** Convert tuple to JSON Schema */
-  def tupleToJsonSchema(schemas: List[Schema[?]], ctx: Context): Json =
+  def tupleToJsonSchema(schemas: List[Schema[?]], ctx: Context): Json = {
     val flattened = flattenTupleSchemas(schemas)
     val itemSchemas = flattened.map(schemaToJsonSchema(_, ctx))
     val size = flattened.size
@@ -189,3 +197,5 @@ private[schemanator] object TypeConverters:
       "minItems" -> Json.Num(size),
       "maxItems" -> Json.Num(size)
     )
+  }
+}

@@ -1,14 +1,18 @@
 # Schemanator
 
-A comprehensive JSON Schema generator for ZIO Schema that converts Scala 3 types to [JSON Schema Draft 2020-12](https://json-schema.org/draft/2020-12/schema).
+A comprehensive JSON Schema generator for ZIO Schema that converts Scala types to [JSON Schema Draft 2020-12](https://json-schema.org/draft/2020-12/schema).
+
+**Cross-compiled for Scala 2.13.16 and Scala 3.7.3** - use the same library across your entire codebase!
 
 ## ✨ Highlights
 
-- 🎯 **Type-Safe Annotations** - Use of Scala 3 context bounds to preserve Schema information in annotations
+- 🔄 **Cross-Compilation** - Full support for both Scala 2.13 and Scala 3
+- 🎯 **Type-Safe Annotations** - Scala 3 context bounds preserve Schema information in annotations
 - 🔧 **Accurate Complex Type Encoding** - Uses `zio-schema-json` to properly encode Lists, Maps, and nested case classes
 - 📦 **ZIO Ecosystem Integration** - First-class support for zio-schema with automatic derivation
 - 🔄 **Schema Evolution Tracking** - Built-in compatibility analysis for API versioning
 - 📝 **JSON Schema 2020-12** - Modern JSON Schema support with extensive validation features
+- 🚀 **Strict API Support** - Built-in annotations for APIs like OpenAI that require strict schemas
 
 ## Features
 
@@ -31,16 +35,16 @@ A comprehensive JSON Schema generator for ZIO Schema that converts Scala 3 types
 
 #### Field Annotations
 - `@fieldName("custom_name")` - Custom field naming (e.g., for snake_case APIs)
-- `@defaultValue(value)` - **Type-safe default values** (recommended)
-- `@fieldDefaultValue(value)` - Default values (type-erased, for compatibility)
+- `@defaultValue(value)` - **Type-safe default values** (Scala 3 only, recommended)
+- `@fieldDefaultValue(value)` - Default values (type-erased, for Scala 2.13 compatibility)
 - `@transientField` - Exclude fields from schema
-- `@requiredField` - Force optional fields to appear in required array (for APIs like OpenAI)
+- `@requiredField` - Force optional fields to appear in required array
 - `@description("text")` - Add documentation to types and fields
 - `@readOnly` - Mark fields as read-only
 - `@writeOnly` - Mark fields as write-only
 - `@deprecated("message")` - Mark fields as deprecated
-- `@exampleValues(values*)` - **Type-safe example values** (recommended)
-- `@examples(values*)` - Example values (type-erased, for compatibility)
+- `@exampleValues(values*)` - **Type-safe example values** (Scala 3 only, recommended)
+- `@examples(values*)` - Example values (type-erased, for Scala 2.13 compatibility)
 
 #### String Validation
 - `@format("email" | "uri" | "date-time" | ...)` - String format validation
@@ -61,23 +65,51 @@ A comprehensive JSON Schema generator for ZIO Schema that converts Scala 3 types
 #### Object Validation
 - `@minProperties(n)` - Minimum number of properties
 - `@maxProperties(n)` - Maximum number of properties
+- `@requireAll` - Mark all fields (including `Option` types) as required with nullable types
+- `@additionalProperties(allowed)` - Control whether extra properties are allowed (true/false)
+- `@strict` - Combines `@requireAll` and `@additionalProperties(false)` for strict validation
 
 #### Enum/ADT Support
 - `@discriminatorName("field")` - Custom discriminator field name
 - `@noDiscriminator` - Disable discriminator for enums
+
+## Scala 2.13 vs Scala 3 Feature Differences
+
+Most features work identically across both Scala versions. The main differences:
+
+### Scala 3 Exclusive Features
+- ✅ **Type-Safe Annotations**: `@defaultValue` and `@exampleValues` with proper type preservation
+- ✅ **Enum syntax**: `enum Color: case Red, Green, Blue`
+- ✅ **Extension methods**: Natural `person.jsonSchema` syntax
+
+### Scala 2.13 Specifics
+- ✅ All core annotations work the same way
+- ✅ Extension methods available via implicit conversions
+- ✅ Use sealed traits instead of enums
+- ⚠️ Use `@fieldDefaultValue` and `@examples` (type-erased) instead of type-safe versions
+- ⚠️ `DeriveSchema.gen` must be called at object/class level, not in function blocks
+
+### Shared Features (All Versions)
+- ✅ All validation annotations (`@format`, `@minimum`, `@maximum`, etc.)
+- ✅ Field annotations (`@fieldName`, `@readOnly`, `@writeOnly`, etc.)
+- ✅ Object-level annotations (`@requireAll`, `@strict`, `@additionalProperties`)
+- ✅ Schema evolution tracking
+- ✅ Recursive type handling
+- ✅ ADT/sealed trait support
 
 ## Installation
 
 Add to your `build.sbt`:
 
 ```scala
-libraryDependencies += "io.github.russwyte" %% "schemanator" % "0.0.2"
+libraryDependencies += "io.github.russwyte" %% "schemanator" % "0.0.3"
 ```
 
 ## Usage
 
 ### Basic Usage
 
+**Scala 3:**
 ```scala
 import schemanator.*
 import zio.schema.*
@@ -102,10 +134,32 @@ val jsonString = person.jsonSchema
 val prettyJson = person.jsonSchemaPretty
 ```
 
+**Scala 2.13:**
+```scala
+import schemanator._
+import zio.schema._
+
+// Define your types
+case class Person(
+  name: String,
+  age: Int,
+  email: Option[String]
+)
+object Person {
+  implicit val schema: Schema[Person] = DeriveSchema.gen[Person]
+}
+
+// Extension methods work the same way via implicit conversions
+val person = Person("Alice", 30, Some("alice@example.com"))
+val jsonAst = person.jsonSchemaAst
+val jsonString = person.jsonSchema
+val prettyJson = person.jsonSchemaPretty
+```
+
 ### Working with Schema Instances
 
 ```scala
-// Generate schema directly from Schema type
+// Generate schema directly from Schema type (both Scala 2.13 and 3)
 val schema = Schema[Person]
 val jsonSchema = schema.jsonSchemaPretty
 ```
@@ -183,17 +237,19 @@ case class Contact(
 ) derives Schema
 ```
 
-#### Required Optional Fields
+#### Strict API Validation
 
-Some APIs (like OpenAI) require optional fields to be listed in the required array with nullable types. Use `@requiredField` to force an `Option[T]` field into the required list with a nullable type:
+Many APIs (like OpenAI, Anthropic, etc.) require strict schema validation. Schemanator provides convenient annotations for this:
 
 ```scala
 import schemanator.annotations.*
 
+// Use @strict for maximum strictness (recommended for most APIs)
+@strict
 case class OpenAIRequest(
   name: String,
-  @requiredField description: Option[String],
-  @requiredField tags: Option[List[String]]
+  description: Option[String],
+  tags: Option[List[String]]
 ) derives Schema
 
 // Generates:
@@ -204,8 +260,34 @@ case class OpenAIRequest(
 //     "description": { "type": ["string", "null"] },
 //     "tags": { "type": ["array", "null"], "items": { "type": "string" } }
 //   },
-//   "required": ["name", "description", "tags"]
+//   "required": ["name", "description", "tags"],
+//   "additionalProperties": false
 // }
+```
+
+**Granular Control:**
+
+```scala
+// Just require all fields (including Option types)
+@requireAll
+case class Config(
+  host: String,
+  port: Option[Int]
+) derives Schema
+
+// Just disallow additional properties
+@additionalProperties(false)
+case class StrictShape(
+  x: Int,
+  y: Int
+) derives Schema
+
+// Individual field control
+case class MixedRequest(
+  name: String,
+  email: Option[String],              // Optional, not required
+  @requiredField phone: Option[String] // Optional type, but required field
+) derives Schema
 ```
 
 #### Enums with Discriminators
@@ -373,11 +455,18 @@ This allows the library to:
 ## Development
 
 ```bash
-# Compile
+# Compile for both Scala versions
 sbt compile
 
-# Run tests
+# Run tests for both versions
 sbt test
+
+# Test specific Scala version
+sbt ++2.13.16 test
+sbt ++3.7.3 test
+
+# Cross-compile and publish
+sbt +publishLocal
 ```
 
 ## License

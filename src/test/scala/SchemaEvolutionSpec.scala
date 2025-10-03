@@ -1,17 +1,66 @@
-import zio.*
-import zio.test.*
-import zio.test.Assertion.*
-import zio.schema.*
-import schemanator.evolution.*
+import zio._
+import zio.test._
+import zio.test.Assertion._
+import zio.schema._
+import schemanator.evolution._
 
-object SchemaEvolutionSpec extends ZIOSpecDefault:
+object SchemaEvolutionSpec extends ZIOSpecDefault {
 
-  def spec = suite("SchemaEvolution")(
+  // PersonV1 variants
+  case class PersonV1a(name: String, age: Int)
+  object PersonV1a {
+    implicit val schema: Schema[PersonV1a] = DeriveSchema.gen[PersonV1a]
+  }
+
+  case class PersonV1b(name: String)
+  object PersonV1b {
+    implicit val schema: Schema[PersonV1b] = DeriveSchema.gen[PersonV1b]
+  }
+
+  case class PersonV1c(name: String, age: Int, email: String)
+  object PersonV1c {
+    implicit val schema: Schema[PersonV1c] = DeriveSchema.gen[PersonV1c]
+  }
+
+  case class PersonV1d(name: String, age: Int)
+  object PersonV1d {
+    implicit val schema: Schema[PersonV1d] = DeriveSchema.gen[PersonV1d]
+  }
+
+  case class PersonV1e(name: String, age: Int)
+  object PersonV1e {
+    implicit val schema: Schema[PersonV1e] = DeriveSchema.gen[PersonV1e]
+  }
+
+  // PersonV2 variants
+  case class PersonV2a(name: String, age: Int, email: Option[String])
+  object PersonV2a {
+    implicit val schema: Schema[PersonV2a] = DeriveSchema.gen[PersonV2a]
+  }
+
+  case class PersonV2b(name: String, age: Int)
+  object PersonV2b {
+    implicit val schema: Schema[PersonV2b] = DeriveSchema.gen[PersonV2b]
+  }
+
+  case class PersonV2c(name: String, age: Int)
+  object PersonV2c {
+    implicit val schema: Schema[PersonV2c] = DeriveSchema.gen[PersonV2c]
+  }
+
+  case class PersonV2d(name: String, age: String)
+  object PersonV2d {
+    implicit val schema: Schema[PersonV2d] = DeriveSchema.gen[PersonV2d]
+  }
+
+  case class PersonV2e(name: String, age: String, email: String)
+  object PersonV2e {
+    implicit val schema: Schema[PersonV2e] = DeriveSchema.gen[PersonV2e]
+  }
+
+  def spec: Spec[Any, Nothing] = suite("SchemaEvolution")(
     test("detects field addition with optional field") {
-      case class PersonV1(name: String, age: Int) derives Schema
-      case class PersonV2(name: String, age: Int, email: Option[String]) derives Schema
-
-      val result = SchemaEvolution.compareSchemas(Schema[PersonV1], Schema[PersonV2])
+      val result = SchemaEvolution.compareSchemas(Schema[PersonV1a], Schema[PersonV2a])
 
       assertTrue(
         result.changes.size == 1,
@@ -23,10 +72,7 @@ object SchemaEvolutionSpec extends ZIOSpecDefault:
       )
     },
     test("detects field addition with required field") {
-      case class PersonV1(name: String) derives Schema
-      case class PersonV2(name: String, age: Int) derives Schema
-
-      val result = SchemaEvolution.compareSchemas(Schema[PersonV1], Schema[PersonV2])
+      val result = SchemaEvolution.compareSchemas(Schema[PersonV1b], Schema[PersonV2b])
 
       assertTrue(
         result.changes.size == 1,
@@ -38,10 +84,7 @@ object SchemaEvolutionSpec extends ZIOSpecDefault:
       )
     },
     test("detects field removal") {
-      case class PersonV1(name: String, age: Int, email: String) derives Schema
-      case class PersonV2(name: String, age: Int) derives Schema
-
-      val result = SchemaEvolution.compareSchemas(Schema[PersonV1], Schema[PersonV2])
+      val result = SchemaEvolution.compareSchemas(Schema[PersonV1c], Schema[PersonV2c])
 
       assertTrue(
         result.changes.size == 1,
@@ -53,10 +96,7 @@ object SchemaEvolutionSpec extends ZIOSpecDefault:
       )
     },
     test("detects field type change") {
-      case class PersonV1(name: String, age: Int) derives Schema
-      case class PersonV2(name: String, age: String) derives Schema
-
-      val result = SchemaEvolution.compareSchemas(Schema[PersonV1], Schema[PersonV2])
+      val result = SchemaEvolution.compareSchemas(Schema[PersonV1d], Schema[PersonV2d])
 
       assertTrue(
         result.changes.size == 1,
@@ -68,10 +108,7 @@ object SchemaEvolutionSpec extends ZIOSpecDefault:
       )
     },
     test("detects multiple changes as breaking") {
-      case class PersonV1(name: String, age: Int) derives Schema
-      case class PersonV2(name: String, age: String, email: String) derives Schema
-
-      val result = SchemaEvolution.compareSchemas(Schema[PersonV1], Schema[PersonV2])
+      val result = SchemaEvolution.compareSchemas(Schema[PersonV1e], Schema[PersonV2e])
 
       assertTrue(
         result.changes.size == 2,
@@ -79,4 +116,4 @@ object SchemaEvolutionSpec extends ZIOSpecDefault:
       )
     },
   )
-end SchemaEvolutionSpec
+}

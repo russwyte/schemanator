@@ -1,5 +1,6 @@
 package schemanator.generator
 
+import zio.*
 import zio.schema.*
 import zio.json.ast.Json
 
@@ -15,7 +16,7 @@ import zio.json.ast.Json
   *   val jsonSchema = JsonSchemaGenerator.fromSchema(schema)
   * }}}
   */
-object JsonSchemaGenerator:
+object JsonSchemaGenerator {
 
   /** Convert a ZIO Schema to JSON Schema with version included by default.
     *
@@ -36,40 +37,51 @@ object JsonSchemaGenerator:
     * @return
     *   JSON Schema representation
     */
-  def fromSchema[A](schema: Schema[A], includeSchemaVersion: Boolean): Json =
+  def fromSchema[A](schema: Schema[A], includeSchemaVersion: Boolean): Json = {
     val ctx        = TypeConverters.Context()
     val mainSchema = TypeConverters.schemaToJsonSchema(schema, ctx)
 
     val baseSchema =
-      if ctx.definitions.isEmpty then mainSchema
-      else
+      if (ctx.definitions.isEmpty) mainSchema
+      else {
         // Check if mainSchema is a $ref or an inline schema
-        mainSchema match
+        mainSchema match {
           case Json.Obj(fields) if fields.exists(_._1 == "$ref") =>
             // mainSchema is a reference, extract it
             val refValue = fields.collectFirst { case ("$ref", ref) => ref }.get
+            // Preserve field order: $defs, $ref
             Json.Obj(
-              "$defs" -> Json.Obj(ctx.definitions.toSeq*),
-              "$ref"  -> refValue,
+              Chunk(
+                "$defs" -> Json.Obj(ctx.definitions.toSeq*),
+                "$ref"  -> refValue
+              )*
             )
           case _ =>
             // mainSchema is inline, merge with $defs
-            mainSchema match
+            mainSchema match {
               case Json.Obj(fields) =>
-                Json.Obj(("$defs" -> Json.Obj(ctx.definitions.toSeq*)) +: fields*)
+                // Prepend $defs to existing fields
+                Json.Obj((Chunk(("$defs", Json.Obj(ctx.definitions.toSeq*))) ++ fields)*)
               case other =>
                 // Shouldn't happen, but fallback
                 Json.Obj(
-                  "$defs"  -> Json.Obj(ctx.definitions.toSeq*),
-                  "schema" -> other,
+                  Chunk(
+                    "$defs"  -> Json.Obj(ctx.definitions.toSeq*),
+                    "schema" -> other
+                  )*
                 )
+            }
+        }
+      }
 
     // Add $schema property to indicate JSON Schema Draft 2020-12
-    if includeSchemaVersion then
-      baseSchema match
+    if (includeSchemaVersion)
+      baseSchema match {
         case Json.Obj(fields) =>
-          Json.Obj(("$schema" -> Json.Str("https://json-schema.org/draft/2020-12/schema")) +: fields*)
+          // Prepend $schema as first field
+          Json.Obj((Chunk(("$schema", Json.Str("https://json-schema.org/draft/2020-12/schema"))) ++ fields)*)
         case other => other
+      }
     else baseSchema
-  end fromSchema
-end JsonSchemaGenerator
+  }
+}
