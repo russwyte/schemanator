@@ -16,18 +16,20 @@ import zio.schema.*
  *   // result.compatibility == FullyCompatible
  * }}}
  */
-object SchemaEvolution:
+object SchemaEvolution {
 
-  enum FieldChange:
+  enum FieldChange {
     case FieldAdded(name: String, schema: Schema[?], optional: Boolean)
     case FieldRemoved(name: String, schema: Schema[?])
     case FieldTypeChanged(name: String, oldSchema: Schema[?], newSchema: Schema[?])
+  }
 
-  enum CompatibilityType:
+  enum CompatibilityType {
     case FullyCompatible
     case BackwardCompatible
     case ForwardCompatible
     case Breaking
+  }
 
   case class EvolutionResult(
     changes: List[FieldChange],
@@ -111,3 +113,4 @@ object SchemaEvolution:
       case _: Schema.Optional[?] => true
       case Schema.Lazy(schema0) => isOptional(schema0())
       case _ => false
+}

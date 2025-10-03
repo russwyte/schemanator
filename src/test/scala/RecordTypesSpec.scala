@@ -1,26 +1,44 @@
-import zio.*
-import zio.test.*
-import zio.test.Assertion.*
-import zio.schema.*
-import zio.schema.annotation.*
+import zio._
+import zio.test._
+import zio.test.Assertion._
+import zio.schema._
+import zio.schema.annotation._
 import zio.json.ast.Json
-import schemanator.*
-import schemanator.generator.*
+import schemanator._
+import schemanator.generator._
 
-object RecordTypesSpec extends ZIOSpecDefault:
+object RecordTypesSpec extends ZIOSpecDefault {
 
-  case class Person(name: String, age: Int, email: Option[String]) derives Schema
-  case class Address(street: String, city: String, zipCode: Int) derives Schema
-  case class Company(name: String, address: Address, employees: List[Person]) derives Schema
-  case class Tree(value: Int, children: List[Tree]) derives Schema
+  case class Person(name: String, age: Int, email: Option[String])
+  object Person {
+    implicit val schema: Schema[Person] = DeriveSchema.gen[Person]
+  }
+
+  case class Address(street: String, city: String, zipCode: Int)
+  object Address {
+    implicit val schema: Schema[Address] = DeriveSchema.gen[Address]
+  }
+
+  case class Company(name: String, address: Address, employees: List[Person])
+  object Company {
+    implicit val schema: Schema[Company] = DeriveSchema.gen[Company]
+  }
+
+  case class Tree(value: Int, children: List[Tree])
+  object Tree {
+    implicit val schema: Schema[Tree] = DeriveSchema.gen[Tree]
+  }
 
   @description("A user account in the system")
   case class User(
     @description("The user's full name") name: String,
     @description("The user's age in years") age: Int
-  ) derives Schema
+  )
+  object User {
+    implicit val schema: Schema[User] = DeriveSchema.gen[User]
+  }
 
-  def spec = suite("RecordTypes")(
+  def spec: Spec[Any, Nothing] = suite("RecordTypes")(
     test("generates schema for case class with required fields") {
       val jsonSchema = Schema[Person].jsonSchemaAst
 
@@ -34,11 +52,12 @@ object RecordTypesSpec extends ZIOSpecDefault:
         "required" -> Json.Arr(Json.Str("name"), Json.Str("age")),
       )
 
-      jsonSchema match
+      jsonSchema match {
         case Json.Obj(fields) =>
           val withoutSchema = Json.Obj(fields.filter(_._1 != "$schema")*)
           assertTrue(withoutSchema == expected)
         case _ => assertTrue(false)
+      }
     },
     test("generates schema for nested case classes") {
       val jsonSchema = Schema[Company].jsonSchemaAst
@@ -76,17 +95,18 @@ object RecordTypesSpec extends ZIOSpecDefault:
         "required" -> Json.Arr(Json.Str("name"), Json.Str("address"), Json.Str("employees")),
       )
 
-      jsonSchema match
+      jsonSchema match {
         case Json.Obj(fields) =>
           val withoutSchema = Json.Obj(fields.filter(_._1 != "$schema")*)
           assertTrue(withoutSchema == expected)
         case _ => assertTrue(false)
+      }
     },
     test("generates schema for recursive types") {
       val jsonSchema = Schema[Tree].jsonSchemaAst
 
       // Should have $defs and $ref
-      jsonSchema match
+      jsonSchema match {
         case Json.Obj(fields) =>
           val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
           val hasDefs = fieldsWithoutSchema.exists { case (k, _) => k == "$defs" }
@@ -103,11 +123,12 @@ object RecordTypesSpec extends ZIOSpecDefault:
           assertTrue(hasTreeDef)
         case _ =>
           assertTrue(false)
+      }
     },
     test("generates schema with description annotations") {
       val jsonSchema = Schema[User].jsonSchemaAst
 
-      jsonSchema match
+      jsonSchema match {
         case Json.Obj(fields) =>
           val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
           // Check for description at the type level
@@ -139,6 +160,7 @@ object RecordTypesSpec extends ZIOSpecDefault:
           assertTrue(hasDescription && hasFieldDescriptions)
         case _ =>
           assertTrue(false)
+      }
     },
   )
-end RecordTypesSpec
+}

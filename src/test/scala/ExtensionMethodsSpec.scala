@@ -1,30 +1,47 @@
-import zio.*
-import zio.test.*
-import zio.test.Assertion.*
-import zio.schema.*
+import zio._
+import zio.test._
+import zio.test.Assertion._
+import zio.schema._
 import zio.json.ast.Json
-import schemanator.*
-import schemanator.annotations.*
+import schemanator._
+import schemanator.annotations._
 
-object ExtensionMethodsSpec extends ZIOSpecDefault:
+object ExtensionMethodsSpec extends ZIOSpecDefault {
 
-  def spec = suite("ExtensionMethods")(
+  case class Person(name: String, age: Int)
+  object Person {
+    implicit val schema: Schema[Person] = DeriveSchema.gen[Person]
+  }
+
+  case class Simple(value: String)
+  object Simple {
+    implicit val schema: Schema[Simple] = DeriveSchema.gen[Simple]
+  }
+
+  case class RangeMin(@minimum(0.0) value: Double)
+  object RangeMin {
+    implicit val schema: Schema[RangeMin] = DeriveSchema.gen[RangeMin]
+  }
+
+  case class RangeMax(@maximum(100.0) value: Double)
+  object RangeMax {
+    implicit val schema: Schema[RangeMax] = DeriveSchema.gen[RangeMax]
+  }
+
+  def spec: Spec[Any, Nothing] = suite("ExtensionMethods")(
     test("extension method jsonSchemaAst generates JSON Schema AST") {
-      case class Person(name: String, age: Int) derives Schema
-
       val person = Person("Alice", 30)
       val jsonAst = person.jsonSchemaAst
 
-      jsonAst match
+      jsonAst match {
         case Json.Obj(fields) =>
           val hasSchema = fields.exists { case (k, _) => k == "$schema" }
           val hasType = fields.exists { case (k, v) => k == "type" && v == Json.Str("object") }
           assertTrue(hasSchema && hasType)
         case _ => assertTrue(false)
+      }
     },
     test("extension method jsonSchema generates JSON string") {
-      case class Simple(value: String) derives Schema
-
       val simple = Simple("test")
       val jsonString = simple.jsonSchema
 
@@ -35,8 +52,6 @@ object ExtensionMethodsSpec extends ZIOSpecDefault:
       )
     },
     test("extension method jsonSchemaPretty generates formatted JSON string") {
-      case class Simple(value: String) derives Schema
-
       val simple = Simple("test")
       val prettyJson = simple.jsonSchemaPretty
 
@@ -48,22 +63,19 @@ object ExtensionMethodsSpec extends ZIOSpecDefault:
       )
     },
     test("Schema extension method jsonSchemaAst generates JSON Schema AST") {
-      case class Person(name: String, age: Int) derives Schema
-
       val schema = Schema[Person]
       val jsonAst = schema.jsonSchemaAst
 
-      jsonAst match
+      jsonAst match {
         case Json.Obj(fields) =>
           val hasSchema = fields.exists { case (k, _) => k == "$schema" }
           val hasType = fields.exists { case (k, v) => k == "type" && v == Json.Str("object") }
           assertTrue(hasSchema && hasType)
         case _ => assertTrue(false)
+      }
     },
     test("Schema extension method jsonSchema generates JSON string") {
-      case class Range(@minimum(0.0) value: Double) derives Schema
-
-      val schema = Schema[Range]
+      val schema = Schema[RangeMin]
       val jsonString = schema.jsonSchema
 
       assertTrue(
@@ -73,9 +85,7 @@ object ExtensionMethodsSpec extends ZIOSpecDefault:
       )
     },
     test("Schema extension method jsonSchemaPretty generates formatted JSON string") {
-      case class Range(@maximum(100.0) value: Double) derives Schema
-
-      val schema = Schema[Range]
+      val schema = Schema[RangeMax]
       val prettyJson = schema.jsonSchemaPretty
 
       assertTrue(
@@ -87,4 +97,4 @@ object ExtensionMethodsSpec extends ZIOSpecDefault:
       )
     },
   )
-end ExtensionMethodsSpec
+}

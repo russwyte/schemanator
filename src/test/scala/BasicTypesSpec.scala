@@ -1,33 +1,38 @@
-import zio.*
-import zio.test.*
-import zio.test.Assertion.*
-import zio.schema.*
+import zio._
+import zio.test._
+import zio.test.Assertion._
+import zio.schema._
 import zio.json.ast.Json
-import schemanator.*
-import schemanator.generator.*
+import schemanator._
+import schemanator.generator._
 
-object BasicTypesSpec extends ZIOSpecDefault:
+object BasicTypesSpec extends ZIOSpecDefault {
+  // Define case classes and schemas at object level for Scala 2.13 DeriveSchema.gen compatibility
+  case class Simple(name: String)
+  object Simple {
+    implicit val schema: Schema[Simple] = DeriveSchema.gen[Simple]
+  }
 
-  def spec = suite("BasicTypes")(
+  def spec: Spec[Any, Nothing] = suite("BasicTypes")(
     test("includes JSON Schema Draft 2020-12 version by default") {
-      case class Simple(name: String) derives Schema
       val jsonSchema = Schema[Simple].jsonSchemaAst
 
-      jsonSchema match
+      jsonSchema match {
         case Json.Obj(fields) =>
-          val hasSchemaVersion = fields.headOption.exists {
+          // Verify $schema is the first field (proper JSON Schema convention)
+          val hasSchemaVersionFirst = fields.headOption.exists {
             case ("$schema", Json.Str(value)) => value == "https://json-schema.org/draft/2020-12/schema"
             case _ => false
           }
-          assertTrue(hasSchemaVersion)
+          assertTrue(hasSchemaVersionFirst)
         case _ =>
           assertTrue(false)
+      }
     },
     test("can omit schema version when requested") {
-      case class Simple(name: String) derives Schema
       val jsonSchema = JsonSchemaGenerator.fromSchema(Schema[Simple], includeSchemaVersion = false)
 
-      jsonSchema match
+      jsonSchema match {
         case Json.Obj(fields) =>
           val hasNoSchemaVersion = !fields.exists {
             case ("$schema", _) => true
@@ -36,43 +41,48 @@ object BasicTypesSpec extends ZIOSpecDefault:
           assertTrue(hasNoSchemaVersion)
         case _ =>
           assertTrue(false)
+      }
     },
     test("generates schema for primitive String type") {
       val jsonSchema = Schema[String].jsonSchemaAst
 
       // Strip $schema field for comparison
-      jsonSchema match
+      jsonSchema match {
         case Json.Obj(fields) =>
           val withoutSchema = Json.Obj(fields.filter(_._1 != "$schema")*)
           assertTrue(withoutSchema == Json.Obj("type" -> Json.Str("string")))
         case _ => assertTrue(false)
+      }
     },
     test("generates schema for primitive Int type") {
       val jsonSchema = Schema[Int].jsonSchemaAst
 
-      jsonSchema match
+      jsonSchema match {
         case Json.Obj(fields) =>
           val withoutSchema = Json.Obj(fields.filter(_._1 != "$schema")*)
           assertTrue(withoutSchema == Json.Obj("type" -> Json.Str("integer")))
         case _ => assertTrue(false)
+      }
     },
     test("generates schema for primitive Boolean type") {
       val jsonSchema = Schema[Boolean].jsonSchemaAst
 
-      jsonSchema match
+      jsonSchema match {
         case Json.Obj(fields) =>
           val withoutSchema = Json.Obj(fields.filter(_._1 != "$schema")*)
           assertTrue(withoutSchema == Json.Obj("type" -> Json.Str("boolean")))
         case _ => assertTrue(false)
+      }
     },
     test("generates schema for primitive Double type") {
       val jsonSchema = Schema[Double].jsonSchemaAst
 
-      jsonSchema match
+      jsonSchema match {
         case Json.Obj(fields) =>
           val withoutSchema = Json.Obj(fields.filter(_._1 != "$schema")*)
           assertTrue(withoutSchema == Json.Obj("type" -> Json.Str("number")))
         case _ => assertTrue(false)
+      }
     },
     test("generates schema for List") {
       val jsonSchema = Schema[List[String]].jsonSchemaAst
@@ -82,11 +92,12 @@ object BasicTypesSpec extends ZIOSpecDefault:
         "items" -> Json.Obj("type" -> Json.Str("string")),
       )
 
-      jsonSchema match
+      jsonSchema match {
         case Json.Obj(fields) =>
           val withoutSchema = Json.Obj(fields.filter(_._1 != "$schema")*)
           assertTrue(withoutSchema == expected)
         case _ => assertTrue(false)
+      }
     },
     test("generates schema for Set") {
       val jsonSchema = Schema[Set[Int]].jsonSchemaAst
@@ -97,11 +108,12 @@ object BasicTypesSpec extends ZIOSpecDefault:
         "uniqueItems" -> Json.Bool(true),
       )
 
-      jsonSchema match
+      jsonSchema match {
         case Json.Obj(fields) =>
           val withoutSchema = Json.Obj(fields.filter(_._1 != "$schema")*)
           assertTrue(withoutSchema == expected)
         case _ => assertTrue(false)
+      }
     },
     test("generates schema for Map") {
       val jsonSchema = Schema[Map[String, Int]].jsonSchemaAst
@@ -111,11 +123,12 @@ object BasicTypesSpec extends ZIOSpecDefault:
         "additionalProperties" -> Json.Obj("type" -> Json.Str("integer")),
       )
 
-      jsonSchema match
+      jsonSchema match {
         case Json.Obj(fields) =>
           val withoutSchema = Json.Obj(fields.filter(_._1 != "$schema")*)
           assertTrue(withoutSchema == expected)
         case _ => assertTrue(false)
+      }
     },
     test("generates schema for Tuple2") {
       val jsonSchema = Schema[(String, Int)].jsonSchemaAst
@@ -131,11 +144,12 @@ object BasicTypesSpec extends ZIOSpecDefault:
         "maxItems" -> Json.Num(2)
       )
 
-      jsonSchema match
+      jsonSchema match {
         case Json.Obj(fields) =>
           val withoutSchema = Json.Obj(fields.filter(_._1 != "$schema")*)
           assertTrue(withoutSchema == expected)
         case _ => assertTrue(false)
+      }
     },
     test("generates schema for Tuple3") {
       val jsonSchema = Schema[(String, Int, Boolean)].jsonSchemaAst
@@ -152,11 +166,12 @@ object BasicTypesSpec extends ZIOSpecDefault:
         "maxItems" -> Json.Num(3)
       )
 
-      jsonSchema match
+      jsonSchema match {
         case Json.Obj(fields) =>
           val withoutSchema = Json.Obj(fields.filter(_._1 != "$schema")*)
           assertTrue(withoutSchema == expected)
         case _ => assertTrue(false)
+      }
     },
     test("generates schema for Vector") {
       val jsonSchema = Schema[Vector[String]].jsonSchemaAst
@@ -166,11 +181,12 @@ object BasicTypesSpec extends ZIOSpecDefault:
         "items" -> Json.Obj("type" -> Json.Str("string"))
       )
 
-      jsonSchema match
+      jsonSchema match {
         case Json.Obj(fields) =>
           val withoutSchema = Json.Obj(fields.filter(_._1 != "$schema")*)
           assertTrue(withoutSchema == expected)
         case _ => assertTrue(false)
+      }
     },
     test("generates schema for Chunk") {
       val jsonSchema = Schema[zio.Chunk[Int]].jsonSchemaAst
@@ -180,11 +196,12 @@ object BasicTypesSpec extends ZIOSpecDefault:
         "items" -> Json.Obj("type" -> Json.Str("integer"))
       )
 
-      jsonSchema match
+      jsonSchema match {
         case Json.Obj(fields) =>
           val withoutSchema = Json.Obj(fields.filter(_._1 != "$schema")*)
           assertTrue(withoutSchema == expected)
         case _ => assertTrue(false)
+      }
     },
   )
-end BasicTypesSpec
+}
