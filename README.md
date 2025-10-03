@@ -102,7 +102,7 @@ Most features work identically across both Scala versions. The main differences:
 Add to your `build.sbt`:
 
 ```scala
-libraryDependencies += "io.github.russwyte" %% "schemanator" % "0.0.3"
+libraryDependencies += "io.github.russwyte" %% "schemanator" % "0.0.4"
 ```
 
 ## Usage
