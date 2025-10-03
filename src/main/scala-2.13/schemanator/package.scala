@@ -1,3 +1,4 @@
+import scala.language.implicitConversions
 package object schemanator {
   // Re-export the implicit conversions from SchemaOps
   // This makes the extension methods available when importing schemanator._

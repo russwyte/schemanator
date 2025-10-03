@@ -5,7 +5,7 @@ import zio.schema.*
 import zio.schema.annotation.*
 import zio.schema.validation.*
 import zio.json.ast.Json
-import schemanator.annotations.{*, given}
+import schemanator.annotations.*
 
 private[schemanator] object MetadataExtractor {
 
@@ -18,7 +18,7 @@ private[schemanator] object MetadataExtractor {
         metadata = metadata + ("description" -> Json.Str(desc.text))
       case v: validate[?] =>
         metadata = metadata ++ extractValidation(v.validation)
-      case fName: fieldName =>
+      case _: fieldName =>
         // fieldName is handled separately in field processing
         ()
       case fDefault: fieldDefaultValue[?] =>
@@ -36,21 +36,21 @@ private[schemanator] object MetadataExtractor {
         metadata = metadata + ("examples" -> Json.Arr(ex.values.map(Utilities.jsonFromAny)*))
       case dv: defaultValue[?] =>
         // Our custom defaultValue annotation preserves the schema for proper encoding
-        metadata = metadata + ("default" -> Utilities.jsonFromValue(dv.value)(dv.schema))
+        metadata = metadata + ("default" -> Utilities.jsonFromValue(dv.value)(using dv.schema))
       case exVals: exampleValues[?] =>
         // Type-safe examples with schema - proper encoding
         metadata =
-          metadata + ("examples" -> Json.Arr(exVals.values.map(v => Utilities.jsonFromValue(v)(exVals.schema))*))
+          metadata + ("examples" -> Json.Arr(exVals.values.map(v => Utilities.jsonFromValue(v)(using exVals.schema))*))
       case fmt: format =>
         metadata = metadata + ("format" -> Json.Str(fmt.formatType))
       case mult: multipleOf =>
         metadata = metadata + ("multipleOf" -> Json.Num(mult.value))
       case min: minimum =>
         if (min.exclusive) metadata = metadata + ("exclusiveMinimum" -> Json.Num(min.value))
-        else metadata = metadata + ("minimum"                         -> Json.Num(min.value))
+        else metadata = metadata + ("minimum"                        -> Json.Num(min.value))
       case max: maximum =>
         if (max.exclusive) metadata = metadata + ("exclusiveMaximum" -> Json.Num(max.value))
-        else metadata = metadata + ("maximum"                         -> Json.Num(max.value))
+        else metadata = metadata + ("maximum"                        -> Json.Num(max.value))
       case minItems: minItems =>
         metadata = metadata + ("minItems" -> Json.Num(minItems.n))
       case maxItems: maxItems =>
@@ -69,7 +69,7 @@ private[schemanator] object MetadataExtractor {
 
   /** Extract validation rules from ZIO Schema Validation */
   def extractValidation(validation: Validation[?]): Map[String, Json] = {
-    import zio.schema.validation.{Predicate, Bool, Regex}
+    import zio.schema.validation.*
 
     def extractFromBool[A](bool: Bool[Predicate[A]]): Map[String, Json] =
       bool match {

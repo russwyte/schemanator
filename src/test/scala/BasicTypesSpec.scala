@@ -1,10 +1,9 @@
-import zio._
-import zio.test._
-import zio.test.Assertion._
-import zio.schema._
+import zio.*
+import zio.test.*
+import zio.schema.*
 import zio.json.ast.Json
-import schemanator._
-import schemanator.generator._
+import schemanator.*
+import schemanator.generator.*
 
 object BasicTypesSpec extends ZIOSpecDefault {
   // Define case classes and schemas at object level for Scala 2.13 DeriveSchema.gen compatibility
@@ -22,7 +21,7 @@ object BasicTypesSpec extends ZIOSpecDefault {
           // Verify $schema is the first field (proper JSON Schema convention)
           val hasSchemaVersionFirst = fields.headOption.exists {
             case ("$schema", Json.Str(value)) => value == "https://json-schema.org/draft/2020-12/schema"
-            case _ => false
+            case _                            => false
           }
           assertTrue(hasSchemaVersionFirst)
         case _ =>
@@ -36,7 +35,7 @@ object BasicTypesSpec extends ZIOSpecDefault {
         case Json.Obj(fields) =>
           val hasNoSchemaVersion = !fields.exists {
             case ("$schema", _) => true
-            case _ => false
+            case _              => false
           }
           assertTrue(hasNoSchemaVersion)
         case _ =>
@@ -134,14 +133,14 @@ object BasicTypesSpec extends ZIOSpecDefault {
       val jsonSchema = Schema[(String, Int)].jsonSchemaAst
 
       val expected = Json.Obj(
-        "type"  -> Json.Str("array"),
+        "type" -> Json.Str("array"),
         "prefixItems" -> Json.Arr(
           Json.Obj("type" -> Json.Str("string")),
-          Json.Obj("type" -> Json.Str("integer"))
+          Json.Obj("type" -> Json.Str("integer")),
         ),
-        "items" -> Json.Bool(false),
+        "items"    -> Json.Bool(false),
         "minItems" -> Json.Num(2),
-        "maxItems" -> Json.Num(2)
+        "maxItems" -> Json.Num(2),
       )
 
       jsonSchema match {
@@ -155,15 +154,15 @@ object BasicTypesSpec extends ZIOSpecDefault {
       val jsonSchema = Schema[(String, Int, Boolean)].jsonSchemaAst
 
       val expected = Json.Obj(
-        "type"  -> Json.Str("array"),
+        "type" -> Json.Str("array"),
         "prefixItems" -> Json.Arr(
           Json.Obj("type" -> Json.Str("string")),
           Json.Obj("type" -> Json.Str("integer")),
-          Json.Obj("type" -> Json.Str("boolean"))
+          Json.Obj("type" -> Json.Str("boolean")),
         ),
-        "items" -> Json.Bool(false),
+        "items"    -> Json.Bool(false),
         "minItems" -> Json.Num(3),
-        "maxItems" -> Json.Num(3)
+        "maxItems" -> Json.Num(3),
       )
 
       jsonSchema match {
@@ -178,7 +177,7 @@ object BasicTypesSpec extends ZIOSpecDefault {
 
       val expected = Json.Obj(
         "type"  -> Json.Str("array"),
-        "items" -> Json.Obj("type" -> Json.Str("string"))
+        "items" -> Json.Obj("type" -> Json.Str("string")),
       )
 
       jsonSchema match {
@@ -193,7 +192,7 @@ object BasicTypesSpec extends ZIOSpecDefault {
 
       val expected = Json.Obj(
         "type"  -> Json.Str("array"),
-        "items" -> Json.Obj("type" -> Json.Str("integer"))
+        "items" -> Json.Obj("type" -> Json.Str("integer")),
       )
 
       jsonSchema match {

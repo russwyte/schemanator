@@ -3,7 +3,6 @@ package schemanator.generator
 import zio.*
 import zio.schema.*
 import zio.schema.annotation.*
-import zio.schema.validation.*
 import zio.schema.codec.JsonCodec
 import zio.json.ast.Json
 import schemanator.annotations.*
@@ -56,7 +55,7 @@ private[schemanator] object Utilities {
       case b: Byte        => Json.Num(b)
       case null           => Json.Null
       // For arrays and collections, convert elements recursively
-      case arr: Array[?] => Json.Arr(arr.map(jsonFromAny)*)
+      case arr: Array[?] => Json.Arr(arr.toIndexedSeq.map(jsonFromAny)*)
       case seq: Seq[?]   => Json.Arr(seq.map(jsonFromAny)*)
       case set: Set[?]   => Json.Arr(set.toSeq.map(jsonFromAny)*)
       // Fallback to string representation for complex types
@@ -96,7 +95,7 @@ private[schemanator] object Utilities {
             // Replace single type with array of [type, "null"]
             val newFields = fields.map {
               case ("type", _) => "type" -> Json.Arr(Json.Str(typeStr), Json.Str("null"))
-              case other => other
+              case other       => other
             }
             Json.Obj(newFields*)
           case Some(("type", Json.Arr(_))) =>

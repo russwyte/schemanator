@@ -1,8 +1,7 @@
-import zio._
-import zio.test._
-import zio.test.Assertion._
-import zio.schema._
-import schemanator.evolution._
+import zio.*
+import zio.test.*
+import zio.schema.*
+import schemanator.evolution.*
 
 object SchemaEvolutionSpec extends ZIOSpecDefault {
 
@@ -66,9 +65,9 @@ object SchemaEvolutionSpec extends ZIOSpecDefault {
         result.changes.size == 1,
         result.changes.head match {
           case SchemaEvolution.FieldChange.FieldAdded("email", _, true) => true
-          case _ => false
+          case _                                                        => false
         },
-        result.compatibility == SchemaEvolution.CompatibilityType.FullyCompatible
+        result.compatibility == SchemaEvolution.CompatibilityType.FullyCompatible,
       )
     },
     test("detects field addition with required field") {
@@ -78,9 +77,9 @@ object SchemaEvolutionSpec extends ZIOSpecDefault {
         result.changes.size == 1,
         result.changes.head match {
           case SchemaEvolution.FieldChange.FieldAdded("age", _, false) => true
-          case _ => false
+          case _                                                       => false
         },
-        result.compatibility == SchemaEvolution.CompatibilityType.ForwardCompatible
+        result.compatibility == SchemaEvolution.CompatibilityType.ForwardCompatible,
       )
     },
     test("detects field removal") {
@@ -90,9 +89,9 @@ object SchemaEvolutionSpec extends ZIOSpecDefault {
         result.changes.size == 1,
         result.changes.head match {
           case SchemaEvolution.FieldChange.FieldRemoved("email", _) => true
-          case _ => false
+          case _                                                    => false
         },
-        result.compatibility == SchemaEvolution.CompatibilityType.BackwardCompatible
+        result.compatibility == SchemaEvolution.CompatibilityType.BackwardCompatible,
       )
     },
     test("detects field type change") {
@@ -102,9 +101,9 @@ object SchemaEvolutionSpec extends ZIOSpecDefault {
         result.changes.size == 1,
         result.changes.head match {
           case SchemaEvolution.FieldChange.FieldTypeChanged("age", _, _) => true
-          case _ => false
+          case _                                                         => false
         },
-        result.compatibility == SchemaEvolution.CompatibilityType.Breaking
+        result.compatibility == SchemaEvolution.CompatibilityType.Breaking,
       )
     },
     test("detects multiple changes as breaking") {
@@ -112,7 +111,7 @@ object SchemaEvolutionSpec extends ZIOSpecDefault {
 
       assertTrue(
         result.changes.size == 2,
-        result.compatibility == SchemaEvolution.CompatibilityType.Breaking
+        result.compatibility == SchemaEvolution.CompatibilityType.Breaking,
       )
     },
   )
