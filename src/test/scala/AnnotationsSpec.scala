@@ -1,106 +1,104 @@
-import zio._
-import zio.test._
-import zio.test.Assertion._
-import zio.schema._
-import zio.schema.annotation._
+import zio.*
+import zio.test.*
+import zio.schema.*
+import zio.schema.annotation.*
 import zio.schema.validation.Validation
 import zio.json.ast.Json
-import schemanator._
-import schemanator.generator._
-import schemanator.annotations._
+import schemanator.*
+import schemanator.annotations.*
 
 object AnnotationsSpec extends ZIOSpecDefault {
 
   // Define all case classes at object level for Scala 2.13 DeriveSchema.gen compatibility
 
   case class ApiPerson(
-    @fieldName("user_name") name: String,
-    @fieldName("user_age") age: Int
+      @fieldName("user_name") name: String,
+      @fieldName("user_age") age: Int,
   )
   object ApiPerson {
     implicit val schema: Schema[ApiPerson] = DeriveSchema.gen[ApiPerson]
   }
 
   case class Document(
-    id: String,
-    @readOnly createdAt: String
+      id: String,
+      @readOnly createdAt: String,
   )
   object Document {
     implicit val schema: Schema[Document] = DeriveSchema.gen[Document]
   }
 
   case class UserInput(
-    username: String,
-    @writeOnly password: String
+      username: String,
+      @writeOnly password: String,
   )
   object UserInput {
     implicit val schema: Schema[UserInput] = DeriveSchema.gen[UserInput]
   }
 
   case class ApiResponse(
-    data: String,
-    @deprecated("Use newField instead") oldField: String
+      data: String,
+      @deprecated("Use newField instead") oldField: String,
   )
   object ApiResponse {
     implicit val schema: Schema[ApiResponse] = DeriveSchema.gen[ApiResponse]
   }
 
   case class Color(
-    @examples("red", "green", "blue") name: String
+      @examples("red", "green", "blue") name: String
   )
   object Color {
     implicit val schema: Schema[Color] = DeriveSchema.gen[Color]
   }
 
   case class Contact(
-    @format("email") email: String,
-    @format("uri") website: String
+      @format("email") email: String,
+      @format("uri") website: String,
   )
   object Contact {
     implicit val schema: Schema[Contact] = DeriveSchema.gen[Contact]
   }
 
   case class Username(
-    @validate(Validation.minLength(3) && Validation.maxLength(20)) value: String
+      @validate(Validation.minLength(3) && Validation.maxLength(20)) value: String
   )
   object Username {
     implicit val schema: Schema[Username] = DeriveSchema.gen[Username]
   }
 
   case class Status(
-    @stringEnum("active", "inactive", "pending") value: String
+      @stringEnum("active", "inactive", "pending") value: String
   )
   object Status {
     implicit val schema: Schema[Status] = DeriveSchema.gen[Status]
   }
 
   case class Measurement(
-    @multipleOf(0.01) value: Double
+      @multipleOf(0.01) value: Double
   )
   object Measurement {
     implicit val schema: Schema[Measurement] = DeriveSchema.gen[Measurement]
   }
 
   case class Range(
-    @minimum(0.0) @maximum(100.0) value: Double
+      @minimum(0.0) @maximum(100.0) value: Double
   )
   object Range {
     implicit val schema: Schema[Range] = DeriveSchema.gen[Range]
   }
 
   case class BoundedList(
-    @minItems(1) @maxItems(10) items: List[String]
+      @minItems(1) @maxItems(10) items: List[String]
   )
   object BoundedList {
     implicit val schema: Schema[BoundedList] = DeriveSchema.gen[BoundedList]
   }
 
   case class Request(
-    name: String,
-    age: Int,
-    email: Option[String],
-    @requiredField description: Option[String],
-    @requiredField tags: Option[List[String]]
+      name: String,
+      age: Int,
+      email: Option[String],
+      @requiredField description: Option[String],
+      @requiredField tags: Option[List[String]],
   )
   object Request {
     implicit val schema: Schema[Request] = DeriveSchema.gen[Request]
@@ -108,10 +106,10 @@ object AnnotationsSpec extends ZIOSpecDefault {
 
   @requireAll
   case class ApiRequest(
-    endpoint: String,
-    method: Option[String],
-    headers: Option[Map[String, String]],
-    body: Option[String]
+      endpoint: String,
+      method: Option[String],
+      headers: Option[Map[String, String]],
+      body: Option[String],
   )
   object ApiRequest {
     implicit val schema: Schema[ApiRequest] = DeriveSchema.gen[ApiRequest]
@@ -119,9 +117,9 @@ object AnnotationsSpec extends ZIOSpecDefault {
 
   @additionalProperties(false)
   case class StrictConfig(
-    host: String,
-    port: Int,
-    enabled: Boolean
+      host: String,
+      port: Int,
+      enabled: Boolean,
   )
   object StrictConfig {
     implicit val schema: Schema[StrictConfig] = DeriveSchema.gen[StrictConfig]
@@ -129,8 +127,8 @@ object AnnotationsSpec extends ZIOSpecDefault {
 
   @additionalProperties(true)
   case class FlexibleConfig(
-    host: String,
-    port: Int
+      host: String,
+      port: Int,
   )
   object FlexibleConfig {
     implicit val schema: Schema[FlexibleConfig] = DeriveSchema.gen[FlexibleConfig]
@@ -138,9 +136,9 @@ object AnnotationsSpec extends ZIOSpecDefault {
 
   @strict
   case class StrictApiConfig(
-    apiKey: String,
-    timeout: Option[Int],
-    retries: Option[Int]
+      apiKey: String,
+      timeout: Option[Int],
+      retries: Option[Int],
   )
   object StrictApiConfig {
     implicit val schema: Schema[StrictApiConfig] = DeriveSchema.gen[StrictApiConfig]
@@ -153,8 +151,8 @@ object AnnotationsSpec extends ZIOSpecDefault {
       jsonSchema match {
         case Json.Obj(fields) =>
           val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
-          val propsOpt = fieldsWithoutSchema.collectFirst {
-            case ("properties", obj: Json.Obj) => obj
+          val propsOpt = fieldsWithoutSchema.collectFirst { case ("properties", obj: Json.Obj) =>
+            obj
           }
 
           val hasCorrectNames = propsOpt.exists { props =>
@@ -203,7 +201,7 @@ object AnnotationsSpec extends ZIOSpecDefault {
           assertTrue(false)
       }
     },
-    */
+     */
     /* TODO: Scala 2.13 - transientField requires default value
     test("supports @transientField annotation") {
       case class PersonWithTransient(
@@ -233,7 +231,7 @@ object AnnotationsSpec extends ZIOSpecDefault {
           assertTrue(false)
       }
     },
-    */
+     */
     /* TODO: Scala 2.13 - DeriveSchema.gen doesn't work with default values
     test("automatically extracts default values from case class") {
       case class Product(
@@ -291,7 +289,7 @@ object AnnotationsSpec extends ZIOSpecDefault {
           assertTrue(false)
       }
     },
-    */
+     */
     /* TODO: Scala 2.13 - default values issue
     test("annotation default value takes precedence over case class default") {
       case class Item(
@@ -338,21 +336,22 @@ object AnnotationsSpec extends ZIOSpecDefault {
           assertTrue(false)
       }
     },
-    */
+     */
     test("supports @readOnly annotation") {
       val jsonSchema = Schema[Document].jsonSchemaAst
 
       jsonSchema match {
         case Json.Obj(fields) =>
           val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
-          val hasReadOnly = fieldsWithoutSchema.collectFirst {
-            case ("properties", Json.Obj(props)) =>
+          val hasReadOnly = fieldsWithoutSchema
+            .collectFirst { case ("properties", Json.Obj(props)) =>
               props.exists {
                 case ("createdAt", Json.Obj(fieldProps)) =>
                   fieldProps.exists { case ("readOnly", Json.Bool(true)) => true; case _ => false }
                 case _ => false
               }
-          }.getOrElse(false)
+            }
+            .getOrElse(false)
 
           assertTrue(hasReadOnly)
         case _ => assertTrue(false)
@@ -364,14 +363,15 @@ object AnnotationsSpec extends ZIOSpecDefault {
       jsonSchema match {
         case Json.Obj(fields) =>
           val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
-          val hasWriteOnly = fieldsWithoutSchema.collectFirst {
-            case ("properties", Json.Obj(props)) =>
+          val hasWriteOnly = fieldsWithoutSchema
+            .collectFirst { case ("properties", Json.Obj(props)) =>
               props.exists {
                 case ("password", Json.Obj(fieldProps)) =>
                   fieldProps.exists { case ("writeOnly", Json.Bool(true)) => true; case _ => false }
                 case _ => false
               }
-          }.getOrElse(false)
+            }
+            .getOrElse(false)
 
           assertTrue(hasWriteOnly)
         case _ => assertTrue(false)
@@ -383,14 +383,15 @@ object AnnotationsSpec extends ZIOSpecDefault {
       jsonSchema match {
         case Json.Obj(fields) =>
           val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
-          val hasDeprecated = fieldsWithoutSchema.collectFirst {
-            case ("properties", Json.Obj(props)) =>
+          val hasDeprecated = fieldsWithoutSchema
+            .collectFirst { case ("properties", Json.Obj(props)) =>
               props.exists {
                 case ("oldField", Json.Obj(fieldProps)) =>
                   fieldProps.exists { case ("deprecated", Json.Bool(true)) => true; case _ => false }
                 case _ => false
               }
-          }.getOrElse(false)
+            }
+            .getOrElse(false)
 
           assertTrue(hasDeprecated)
         case _ => assertTrue(false)
@@ -402,17 +403,18 @@ object AnnotationsSpec extends ZIOSpecDefault {
       jsonSchema match {
         case Json.Obj(fields) =>
           val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
-          val hasExamples = fieldsWithoutSchema.collectFirst {
-            case ("properties", Json.Obj(props)) =>
+          val hasExamples = fieldsWithoutSchema
+            .collectFirst { case ("properties", Json.Obj(props)) =>
               props.exists {
                 case ("name", Json.Obj(fieldProps)) =>
                   fieldProps.exists {
                     case ("examples", Json.Arr(vals)) => vals.size == 3
-                    case _ => false
+                    case _                            => false
                   }
                 case _ => false
               }
-          }.getOrElse(false)
+            }
+            .getOrElse(false)
 
           assertTrue(hasExamples)
         case _ => assertTrue(false)
@@ -424,8 +426,8 @@ object AnnotationsSpec extends ZIOSpecDefault {
       jsonSchema match {
         case Json.Obj(fields) =>
           val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
-          val hasFormats = fieldsWithoutSchema.collectFirst {
-            case ("properties", Json.Obj(props)) =>
+          val hasFormats = fieldsWithoutSchema
+            .collectFirst { case ("properties", Json.Obj(props)) =>
               val hasEmail = props.exists {
                 case ("email", Json.Obj(fieldProps)) =>
                   fieldProps.exists { case ("format", Json.Str("email")) => true; case _ => false }
@@ -437,7 +439,8 @@ object AnnotationsSpec extends ZIOSpecDefault {
                 case _ => false
               }
               hasEmail && hasUri
-          }.getOrElse(false)
+            }
+            .getOrElse(false)
 
           assertTrue(hasFormats)
         case _ => assertTrue(false)
@@ -449,16 +452,19 @@ object AnnotationsSpec extends ZIOSpecDefault {
       jsonSchema match {
         case Json.Obj(fields) =>
           val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
-          val hasValidation = fieldsWithoutSchema.collectFirst {
-            case ("properties", Json.Obj(props)) =>
+          val hasValidation = fieldsWithoutSchema
+            .collectFirst { case ("properties", Json.Obj(props)) =>
               props.exists {
                 case ("value", Json.Obj(fieldProps)) =>
-                  val hasMinLength = fieldProps.exists { case ("minLength", Json.Num(n)) => n.intValue == 3; case _ => false }
-                  val hasMaxLength = fieldProps.exists { case ("maxLength", Json.Num(n)) => n.intValue == 20; case _ => false }
+                  val hasMinLength =
+                    fieldProps.exists { case ("minLength", Json.Num(n)) => n.intValue == 3; case _ => false }
+                  val hasMaxLength =
+                    fieldProps.exists { case ("maxLength", Json.Num(n)) => n.intValue == 20; case _ => false }
                   hasMinLength && hasMaxLength
                 case _ => false
               }
-          }.getOrElse(false)
+            }
+            .getOrElse(false)
 
           assertTrue(hasValidation)
         case _ => assertTrue(false)
@@ -470,17 +476,18 @@ object AnnotationsSpec extends ZIOSpecDefault {
       jsonSchema match {
         case Json.Obj(fields) =>
           val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
-          val hasEnum = fieldsWithoutSchema.collectFirst {
-            case ("properties", Json.Obj(props)) =>
+          val hasEnum = fieldsWithoutSchema
+            .collectFirst { case ("properties", Json.Obj(props)) =>
               props.exists {
                 case ("value", Json.Obj(fieldProps)) =>
                   fieldProps.exists {
                     case ("enum", Json.Arr(vals)) => vals.size == 3
-                    case _ => false
+                    case _                        => false
                   }
                 case _ => false
               }
-          }.getOrElse(false)
+            }
+            .getOrElse(false)
 
           assertTrue(hasEnum)
         case _ => assertTrue(false)
@@ -492,14 +499,15 @@ object AnnotationsSpec extends ZIOSpecDefault {
       jsonSchema match {
         case Json.Obj(fields) =>
           val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
-          val hasMultipleOf = fieldsWithoutSchema.collectFirst {
-            case ("properties", Json.Obj(props)) =>
+          val hasMultipleOf = fieldsWithoutSchema
+            .collectFirst { case ("properties", Json.Obj(props)) =>
               props.exists {
                 case ("value", Json.Obj(fieldProps)) =>
                   fieldProps.exists { case ("multipleOf", Json.Num(n)) => n.doubleValue == 0.01; case _ => false }
                 case _ => false
               }
-          }.getOrElse(false)
+            }
+            .getOrElse(false)
 
           assertTrue(hasMultipleOf)
         case _ => assertTrue(false)
@@ -511,16 +519,19 @@ object AnnotationsSpec extends ZIOSpecDefault {
       jsonSchema match {
         case Json.Obj(fields) =>
           val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
-          val hasRange = fieldsWithoutSchema.collectFirst {
-            case ("properties", Json.Obj(props)) =>
+          val hasRange = fieldsWithoutSchema
+            .collectFirst { case ("properties", Json.Obj(props)) =>
               props.exists {
                 case ("value", Json.Obj(fieldProps)) =>
-                  val hasMin = fieldProps.exists { case ("minimum", Json.Num(n)) => n.doubleValue == 0.0; case _ => false }
-                  val hasMax = fieldProps.exists { case ("maximum", Json.Num(n)) => n.doubleValue == 100.0; case _ => false }
+                  val hasMin =
+                    fieldProps.exists { case ("minimum", Json.Num(n)) => n.doubleValue == 0.0; case _ => false }
+                  val hasMax =
+                    fieldProps.exists { case ("maximum", Json.Num(n)) => n.doubleValue == 100.0; case _ => false }
                   hasMin && hasMax
                 case _ => false
               }
-          }.getOrElse(false)
+            }
+            .getOrElse(false)
 
           assertTrue(hasRange)
         case _ => assertTrue(false)
@@ -532,8 +543,8 @@ object AnnotationsSpec extends ZIOSpecDefault {
       jsonSchema match {
         case Json.Obj(fields) =>
           val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
-          val hasItemsBounds = fieldsWithoutSchema.collectFirst {
-            case ("properties", Json.Obj(props)) =>
+          val hasItemsBounds = fieldsWithoutSchema
+            .collectFirst { case ("properties", Json.Obj(props)) =>
               props.exists {
                 case ("items", Json.Obj(fieldProps)) =>
                   val hasMin = fieldProps.exists { case ("minItems", Json.Num(n)) => n.intValue == 1; case _ => false }
@@ -541,7 +552,8 @@ object AnnotationsSpec extends ZIOSpecDefault {
                   hasMin && hasMax
                 case _ => false
               }
-          }.getOrElse(false)
+            }
+            .getOrElse(false)
 
           assertTrue(hasItemsBounds)
         case _ => assertTrue(false)
@@ -555,19 +567,20 @@ object AnnotationsSpec extends ZIOSpecDefault {
           val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
 
           // Check required array includes name, age, description, and tags, but NOT email
-          val hasCorrectRequired = fieldsWithoutSchema.collectFirst {
-            case ("required", Json.Arr(items)) =>
+          val hasCorrectRequired = fieldsWithoutSchema
+            .collectFirst { case ("required", Json.Arr(items)) =>
               val requiredFields = items.collect { case Json.Str(name) => name }
               requiredFields.contains("name") &&
               requiredFields.contains("age") &&
               !requiredFields.contains("email") &&
               requiredFields.contains("description") &&
               requiredFields.contains("tags")
-          }.getOrElse(false)
+            }
+            .getOrElse(false)
 
           // Check that description has type ["string", "null"]
-          val hasNullableDescriptionType = fieldsWithoutSchema.collectFirst {
-            case ("properties", Json.Obj(props)) =>
+          val hasNullableDescriptionType = fieldsWithoutSchema
+            .collectFirst { case ("properties", Json.Obj(props)) =>
               props.exists {
                 case ("description", Json.Obj(descFields)) =>
                   descFields.exists {
@@ -577,11 +590,12 @@ object AnnotationsSpec extends ZIOSpecDefault {
                   }
                 case _ => false
               }
-          }.getOrElse(false)
+            }
+            .getOrElse(false)
 
           // Check that tags has type ["array", "null"]
-          val hasNullableArrayType = fieldsWithoutSchema.collectFirst {
-            case ("properties", Json.Obj(props)) =>
+          val hasNullableArrayType = fieldsWithoutSchema
+            .collectFirst { case ("properties", Json.Obj(props)) =>
               props.exists {
                 case ("tags", Json.Obj(tagFields)) =>
                   tagFields.exists {
@@ -591,7 +605,8 @@ object AnnotationsSpec extends ZIOSpecDefault {
                   }
                 case _ => false
               }
-          }.getOrElse(false)
+            }
+            .getOrElse(false)
 
           assertTrue(hasCorrectRequired && hasNullableDescriptionType && hasNullableArrayType)
         case _ => assertTrue(false)
@@ -605,19 +620,20 @@ object AnnotationsSpec extends ZIOSpecDefault {
           val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
 
           // Check that all fields are in the required array (endpoint, method, headers, body)
-          val hasAllRequired = fieldsWithoutSchema.collectFirst {
-            case ("required", Json.Arr(items)) =>
+          val hasAllRequired = fieldsWithoutSchema
+            .collectFirst { case ("required", Json.Arr(items)) =>
               val requiredFields = items.collect { case Json.Str(name) => name }
               requiredFields.contains("endpoint") &&
               requiredFields.contains("method") &&
               requiredFields.contains("headers") &&
               requiredFields.contains("body") &&
               requiredFields.size == 4
-          }.getOrElse(false)
+            }
+            .getOrElse(false)
 
           // Check that optional fields have nullable types
-          val hasNullableTypes = fieldsWithoutSchema.collectFirst {
-            case ("properties", Json.Obj(props)) =>
+          val hasNullableTypes = fieldsWithoutSchema
+            .collectFirst { case ("properties", Json.Obj(props)) =>
               val methodIsNullable = props.exists {
                 case ("method", Json.Obj(methodFields)) =>
                   methodFields.exists {
@@ -639,7 +655,8 @@ object AnnotationsSpec extends ZIOSpecDefault {
               }
 
               methodIsNullable && bodyIsNullable
-          }.getOrElse(false)
+            }
+            .getOrElse(false)
 
           assertTrue(hasAllRequired && hasNullableTypes)
         case _ => assertTrue(false)
@@ -655,7 +672,7 @@ object AnnotationsSpec extends ZIOSpecDefault {
           // Check that additionalProperties is set to false
           val hasAdditionalPropertiesFalse = fieldsWithoutSchema.exists {
             case ("additionalProperties", Json.Bool(false)) => true
-            case _ => false
+            case _                                          => false
           }
 
           assertTrue(hasAdditionalPropertiesFalse)
@@ -672,7 +689,7 @@ object AnnotationsSpec extends ZIOSpecDefault {
           // Check that additionalProperties is set to true
           val hasAdditionalPropertiesTrue = fieldsWithoutSchema.exists {
             case ("additionalProperties", Json.Bool(true)) => true
-            case _ => false
+            case _                                         => false
           }
 
           assertTrue(hasAdditionalPropertiesTrue)
@@ -687,18 +704,19 @@ object AnnotationsSpec extends ZIOSpecDefault {
           val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
 
           // Check that all fields are required (apiKey, timeout, retries)
-          val hasAllRequired = fieldsWithoutSchema.collectFirst {
-            case ("required", Json.Arr(items)) =>
+          val hasAllRequired = fieldsWithoutSchema
+            .collectFirst { case ("required", Json.Arr(items)) =>
               val requiredFields = items.collect { case Json.Str(name) => name }
               requiredFields.contains("apiKey") &&
               requiredFields.contains("timeout") &&
               requiredFields.contains("retries") &&
               requiredFields.size == 3
-          }.getOrElse(false)
+            }
+            .getOrElse(false)
 
           // Check that optional fields have nullable types
-          val hasNullableTypes = fieldsWithoutSchema.collectFirst {
-            case ("properties", Json.Obj(props)) =>
+          val hasNullableTypes = fieldsWithoutSchema
+            .collectFirst { case ("properties", Json.Obj(props)) =>
               val timeoutIsNullable = props.exists {
                 case ("timeout", Json.Obj(timeoutFields)) =>
                   timeoutFields.exists {
@@ -720,12 +738,13 @@ object AnnotationsSpec extends ZIOSpecDefault {
               }
 
               timeoutIsNullable && retriesIsNullable
-          }.getOrElse(false)
+            }
+            .getOrElse(false)
 
           // Check that additionalProperties is false
           val hasAdditionalPropertiesFalse = fieldsWithoutSchema.exists {
             case ("additionalProperties", Json.Bool(false)) => true
-            case _ => false
+            case _                                          => false
           }
 
           assertTrue(hasAllRequired && hasNullableTypes && hasAdditionalPropertiesFalse)

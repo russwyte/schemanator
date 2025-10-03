@@ -34,12 +34,25 @@ lazy val root = project
       )
     ),
     crossScalaVersions := Seq(scala213Version, scala3Version),
-    scalacOptions ++= Seq(
-      "-Xsource:3"
-    ),
+    scalacOptions ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, 13)) =>
+          Seq(
+            "-Xsource:3.0",
+            "-deprecation",
+            "-feature",
+          )
+        case _ =>
+          Seq(
+            "-Wunused:all",
+            "-deprecation",
+            "-feature",
+          )
+      }
+    },
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, 13)) => Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value)
+        case Some((2, 13)) => Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided")
         case _             => Seq.empty
       }
     },
@@ -49,7 +62,6 @@ lazy val root = project
     publishTo              := sonatypePublishToBundle.value,
     versionScheme          := Some("early-semver"),
     libraryDependencies ++= Seq(
-//      "dev.zio" %% "zio"                   % zioVersion,
       "dev.zio" %% "zio-schema"            % zioSchemaVersion,
       "dev.zio" %% "zio-schema-derivation" % zioSchemaVersion,
       "dev.zio" %% "zio-schema-json"       % zioSchemaVersion,

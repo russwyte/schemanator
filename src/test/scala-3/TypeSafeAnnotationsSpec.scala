@@ -1,6 +1,5 @@
 import zio.*
 import zio.test.*
-import zio.test.Assertion.*
 import zio.schema.*
 import zio.json.ast.Json
 import schemanator.*

@@ -51,11 +51,8 @@ object SchemaEvolution {
     }
 
   private def compareRecords(oldRecord: Schema.Record[?], newRecord: Schema.Record[?]): EvolutionResult = {
-    val oldFieldsSeq = oldRecord.fields.toList
-    val newFieldsSeq = newRecord.fields.toList
-
-    val oldFieldsByName: Map[String, Schema[?]] = oldFieldsSeq.map(f => f.name -> f.schema).toMap
-    val newFieldsByName: Map[String, Schema[?]] = newFieldsSeq.map(f => f.name -> f.schema).toMap
+    val oldFieldsByName: Map[String, Schema[?]] = oldRecord.fields.map(f => f.name -> f.schema).toMap
+    val newFieldsByName: Map[String, Schema[?]] = newRecord.fields.map(f => f.name -> f.schema).toMap
 
     val addedFields: List[FieldChange.FieldAdded] = (newFieldsByName.keySet -- oldFieldsByName.keySet).toList.map { name =>
       val fieldSchema = newFieldsByName(name)

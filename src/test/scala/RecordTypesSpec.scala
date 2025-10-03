@@ -1,11 +1,9 @@
-import zio._
-import zio.test._
-import zio.test.Assertion._
-import zio.schema._
-import zio.schema.annotation._
+import zio.*
+import zio.test.*
+import zio.schema.*
+import zio.schema.annotation.*
 import zio.json.ast.Json
-import schemanator._
-import schemanator.generator._
+import schemanator.*
 
 object RecordTypesSpec extends ZIOSpecDefault {
 
@@ -31,8 +29,8 @@ object RecordTypesSpec extends ZIOSpecDefault {
 
   @description("A user account in the system")
   case class User(
-    @description("The user's full name") name: String,
-    @description("The user's age in years") age: Int
+      @description("The user's full name") name: String,
+      @description("The user's age in years") age: Int,
   )
   object User {
     implicit val schema: Schema[User] = DeriveSchema.gen[User]
@@ -109,14 +107,14 @@ object RecordTypesSpec extends ZIOSpecDefault {
       jsonSchema match {
         case Json.Obj(fields) =>
           val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
-          val hasDefs = fieldsWithoutSchema.exists { case (k, _) => k == "$defs" }
-          val hasRef = fieldsWithoutSchema.exists { case (k, _) => k == "$ref" }
+          val hasDefs             = fieldsWithoutSchema.exists { case (k, _) => k == "$defs" }
+          val hasRef              = fieldsWithoutSchema.exists { case (k, _) => k == "$ref" }
 
           assertTrue(hasDefs && hasRef)
 
           // Check that Tree definition exists
-          val defsOpt = fieldsWithoutSchema.collectFirst {
-            case ("$defs", obj: Json.Obj) => obj
+          val defsOpt = fieldsWithoutSchema.collectFirst { case ("$defs", obj: Json.Obj) =>
+            obj
           }
 
           val hasTreeDef = defsOpt.exists(_.fields.exists { case (k, _) => k == "Tree" })
@@ -137,8 +135,8 @@ object RecordTypesSpec extends ZIOSpecDefault {
           }
 
           // Check for field descriptions in properties
-          val propsOpt = fieldsWithoutSchema.collectFirst {
-            case ("properties", obj: Json.Obj) => obj
+          val propsOpt = fieldsWithoutSchema.collectFirst { case ("properties", obj: Json.Obj) =>
+            obj
           }
 
           val hasFieldDescriptions = propsOpt.exists { props =>

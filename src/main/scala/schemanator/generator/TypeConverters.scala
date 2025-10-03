@@ -1,6 +1,5 @@
 package schemanator.generator
 
-import zio.*
 import zio.schema.*
 import zio.json.ast.Json
 import scala.collection.mutable
@@ -8,18 +7,17 @@ import scala.collection.mutable
 private[schemanator] object TypeConverters {
 
   case class Context(
-    definitions: mutable.Map[String, Json] = mutable.Map.empty,
-    inProgress: mutable.Set[String] = mutable.Set.empty
+      definitions: mutable.Map[String, Json] = mutable.Map.empty,
+      inProgress: mutable.Set[String] = mutable.Set.empty,
   )
 
   /** Convert a ZIO Schema to JSON Schema */
   def schemaToJsonSchema(schema: Schema[?], ctx: Context): Json =
     schemaToJsonSchema(schema, ctx, checkRecursion = true)
 
-  /**
-   * Convert a ZIO Schema to JSON Schema with optional recursion checking.
-   * When checkRecursion is false, always generates inline schemas.
-   */
+  /** Convert a ZIO Schema to JSON Schema with optional recursion checking. When checkRecursion is false, always
+    * generates inline schemas.
+    */
   def schemaToJsonSchema(schema: Schema[?], ctx: Context, checkRecursion: Boolean): Json = {
     if (!checkRecursion) {
       schemaToJsonSchemaInner(schema, ctx)
@@ -70,21 +68,21 @@ private[schemanator] object TypeConverters {
 
       case Schema.Sequence(elementSchema, _, _, _, _) =>
         Json.Obj(
-          "type" -> Json.Str("array"),
-          "items" -> schemaToJsonSchema(elementSchema, ctx)
+          "type"  -> Json.Str("array"),
+          "items" -> schemaToJsonSchema(elementSchema, ctx),
         )
 
       case Schema.Map(keySchema, valueSchema, _) =>
         Json.Obj(
-          "type" -> Json.Str("object"),
-          "additionalProperties" -> schemaToJsonSchema(valueSchema, ctx)
+          "type"                 -> Json.Str("object"),
+          "additionalProperties" -> schemaToJsonSchema(valueSchema, ctx),
         )
 
       case Schema.Set(elementSchema, _) =>
         Json.Obj(
-          "type" -> Json.Str("array"),
-          "items" -> schemaToJsonSchema(elementSchema, ctx),
-          "uniqueItems" -> Json.Bool(true)
+          "type"        -> Json.Str("array"),
+          "items"       -> schemaToJsonSchema(elementSchema, ctx),
+          "uniqueItems" -> Json.Bool(true),
         )
 
       case record: Schema.Record[?] =>
@@ -168,7 +166,7 @@ private[schemanator] object TypeConverters {
 
   /** Convert Either to JSON Schema */
   def eitherToJsonSchema(either: Schema.Either[?, ?], ctx: Context): Json = {
-    val leftSchema = schemaToJsonSchema(either.left, ctx)
+    val leftSchema  = schemaToJsonSchema(either.left, ctx)
     val rightSchema = schemaToJsonSchema(either.right, ctx)
 
     Json.Obj(
@@ -186,16 +184,16 @@ private[schemanator] object TypeConverters {
 
   /** Convert tuple to JSON Schema */
   def tupleToJsonSchema(schemas: List[Schema[?]], ctx: Context): Json = {
-    val flattened = flattenTupleSchemas(schemas)
+    val flattened   = flattenTupleSchemas(schemas)
     val itemSchemas = flattened.map(schemaToJsonSchema(_, ctx))
-    val size = flattened.size
+    val size        = flattened.size
 
     Json.Obj(
-      "type" -> Json.Str("array"),
+      "type"        -> Json.Str("array"),
       "prefixItems" -> Json.Arr(itemSchemas*),
-      "items" -> Json.Bool(false),
-      "minItems" -> Json.Num(size),
-      "maxItems" -> Json.Num(size)
+      "items"       -> Json.Bool(false),
+      "minItems"    -> Json.Num(size),
+      "maxItems"    -> Json.Num(size),
     )
   }
 }
