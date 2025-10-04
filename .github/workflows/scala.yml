@@ -18,7 +18,7 @@ env:
     JAVA_OPTS: -Dfile.encoding=UTF-8
 jobs:
   build:
-    runs-on: ubuntu/latest
+    runs-on: ubuntu-latest
     
     steps:
     - uses: actions/checkout@v5
