@@ -1,4 +1,5 @@
 # Schemanator
+[![Scala CI](https://github.com/russwyte/schemanator/actions/workflows/scala.yml/badge.svg)](https://github.com/russwyte/schemanator/actions/workflows/scala.yml)
 
 A comprehensive JSON Schema generator for ZIO Schema that converts Scala types to [JSON Schema Draft 2020-12](https://json-schema.org/draft/2020-12/schema).
 
