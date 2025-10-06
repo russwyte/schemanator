@@ -11,18 +11,20 @@ private[schemanator] object EnumConverter {
   def enumToJsonSchema(e: Schema.Enum[?], ctx: TypeConverters.Context): Json = {
     val hasNoDiscriminator = e.annotations.exists {
       case _: noDiscriminator => true
-      case _ => false
+      case _                  => false
     }
 
-    val discriminatorField = e.annotations.collectFirst {
-      case d: discriminatorName => d.tag
-    }.getOrElse("type")
+    val discriminatorField = e.annotations
+      .collectFirst { case d: discriminatorName =>
+        d.tag
+      }
+      .getOrElse("type")
 
     val caseSchemas = e.cases.map { case_ =>
       // Generate case schema inline, bypassing recursion detection
       // Enum cases shouldn't be treated as separate named types
       val baseSchema = TypeConverters.schemaToJsonSchema(case_.schema, ctx, checkRecursion = false)
-      val caseName = Utilities.getCaseName(case_)
+      val caseName   = Utilities.getCaseName(case_)
 
       if (hasNoDiscriminator)
         baseSchema

@@ -22,21 +22,23 @@ private[schemanator] object RecordConverter {
       // Check if the record has @requireAll or @strict annotation
       val hasRequireAll = record.annotations.exists {
         case _: schemanator.annotations.requireAll => true
-        case _: schemanator.annotations.strict => true
-        case _ => false
+        case _: schemanator.annotations.strict     => true
+        case _                                     => false
       }
 
       val fields = record.fields
         .filter(Utilities.shouldIncludeField)
         .map { field =>
           // Check if this is an optional field with @requiredField or if @requireAll is set
-          val isRequiredOptional = Utilities.isOptional(field.schema) && (hasRequireAll || Utilities.hasRequiredAnnotation(field))
+          val isRequiredOptional =
+            Utilities.isOptional(field.schema) && (hasRequireAll || Utilities.hasRequiredAnnotation(field))
 
-          val fieldSchema = if (isRequiredOptional)
-            // For optional fields marked as required, make the type nullable
-            Utilities.makeNullable(TypeConverters.schemaToJsonSchema(Utilities.unwrapOptional(field.schema), ctx))
-          else
-            TypeConverters.schemaToJsonSchema(field.schema, ctx)
+          val fieldSchema =
+            if (isRequiredOptional)
+              // For optional fields marked as required, make the type nullable
+              Utilities.makeNullable(TypeConverters.schemaToJsonSchema(Utilities.unwrapOptional(field.schema), ctx))
+            else
+              TypeConverters.schemaToJsonSchema(field.schema, ctx)
 
           var fieldSchemaWithMetadata = MetadataExtractor.addMetadata(fieldSchema, field.annotations)
 
@@ -44,7 +46,7 @@ private[schemanator] object RecordConverter {
           // The annotations check ensures we only use explicit annotation-based defaults
           val hasExplicitDefault = field.annotations.exists {
             case _: fieldDefaultValue[?] => true
-            case _ => false
+            case _                       => false
           }
 
           if (hasExplicitDefault)
@@ -54,7 +56,8 @@ private[schemanator] object RecordConverter {
                   case Json.Obj(fields) =>
                     // Only add default if not already present (though it should be from extractMetadata)
                     if (!fields.exists(_._1 == "default"))
-                      fieldSchemaWithMetadata = Json.Obj((fields.toMap + ("default" -> Utilities.jsonFromAny(defaultVal))).toSeq*)
+                      fieldSchemaWithMetadata =
+                        Json.Obj((fields.toMap + ("default" -> Utilities.jsonFromAny(defaultVal))).toSeq*)
                   case _ => ()
                 }
               case None => ()
@@ -67,7 +70,8 @@ private[schemanator] object RecordConverter {
       val required = record.fields
         .filter(Utilities.shouldIncludeField)
         .collect {
-          case field if hasRequireAll || !Utilities.isOptional(field.schema) || Utilities.hasRequiredAnnotation(field) =>
+          case field
+              if hasRequireAll || !Utilities.isOptional(field.schema) || Utilities.hasRequiredAnnotation(field) =>
             Json.Str(Utilities.getFieldName(field))
         }
 
@@ -76,23 +80,24 @@ private[schemanator] object RecordConverter {
       // Check if the record has @additionalProperties or @strict annotation
       val additionalPropsValue: Option[Boolean] = record.annotations.collectFirst {
         case ap: schemanator.annotations.additionalProperties => ap.allowed
-        case _: schemanator.annotations.strict => false
+        case _: schemanator.annotations.strict                => false
       }
 
       // Build result preserving field order: type, properties, required (if present), additionalProperties (if present)
       val baseFields = Chunk(
-        "type" -> Json.Str("object"),
-        "properties" -> properties
+        "type"       -> Json.Str("object"),
+        "properties" -> properties,
       )
 
-      val withRequired = if (required.nonEmpty)
-        baseFields :+ ("required" -> Json.Arr(required*))
-      else
-        baseFields
+      val withRequired =
+        if (required.nonEmpty)
+          baseFields :+ ("required" -> Json.Arr(required*))
+        else
+          baseFields
 
       val allFields = additionalPropsValue match {
         case Some(allowed) => withRequired :+ ("additionalProperties" -> Json.Bool(allowed))
-        case None => withRequired
+        case None          => withRequired
       }
 
       Json.Obj(allFields*)

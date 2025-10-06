@@ -21,6 +21,7 @@ import zio.json.EncoderOps
   * }}}
   */
 extension [T](value: T)(using schema: Schema[T])
+
   /** Generate JSON Schema as a Json AST.
     *
     * @return

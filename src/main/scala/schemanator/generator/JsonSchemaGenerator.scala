@@ -53,7 +53,7 @@ object JsonSchemaGenerator {
             Json.Obj(
               Chunk(
                 "$defs" -> Json.Obj(ctx.definitions.toSeq*),
-                "$ref"  -> refValue
+                "$ref"  -> refValue,
               )*
             )
           case _ =>
@@ -67,7 +67,7 @@ object JsonSchemaGenerator {
                 Json.Obj(
                   Chunk(
                     "$defs"  -> Json.Obj(ctx.definitions.toSeq*),
-                    "schema" -> other
+                    "schema" -> other,
                   )*
                 )
             }
