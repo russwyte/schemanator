@@ -169,9 +169,21 @@ private[schemanator] object TypeConverters {
     val leftSchema  = schemaToJsonSchema(either.left, ctx)
     val rightSchema = schemaToJsonSchema(either.right, ctx)
 
-    Json.Obj(
-      "oneOf" -> Json.Arr(leftSchema, rightSchema)
-    )
+    // Check if @anyOf annotation is present
+    val useAnyOf = either.annotations.exists {
+      case _: schemanator.annotations.anyOf => true
+      case _                                => false
+    }
+
+    if (useAnyOf) {
+      Json.Obj(
+        "anyOf" -> Json.Arr(leftSchema, rightSchema)
+      )
+    } else {
+      Json.Obj(
+        "oneOf" -> Json.Arr(leftSchema, rightSchema)
+      )
+    }
   }
 
   /** Flatten nested tuples */

@@ -15,16 +15,16 @@ object DiagnosticSpec extends ZIOSpecDefault {
   }
 
   case class Document(
-    id: String,
-    @readOnly createdAt: String
+      id: String,
+      @readOnly createdAt: String,
   )
   object Document {
     implicit val schema: Schema[Document] = DeriveSchema.gen[Document]
   }
 
   case class ApiPerson(
-    @fieldName("user_name") name: String,
-    @fieldName("user_age") age: Int
+      @fieldName("user_name") name: String,
+      @fieldName("user_age") age: Int,
   )
   object ApiPerson {
     implicit val schema: Schema[ApiPerson] = DeriveSchema.gen[ApiPerson]
@@ -45,17 +45,17 @@ object DiagnosticSpec extends ZIOSpecDefault {
 
       jsonSchema match {
         case Json.Obj(fields) =>
-          val propsOpt = fields.collectFirst {
-            case ("properties", Json.Obj(props)) => props.map(_._1)
+          val propsOpt = fields.collectFirst { case ("properties", Json.Obj(props)) =>
+            props.map(_._1)
           }
 
           // Verify field order: user_name (from @fieldName), user_age (from @fieldName)
-          val fieldOrder = propsOpt.getOrElse(Chunk.empty)
+          val fieldOrder    = propsOpt.getOrElse(Chunk.empty)
           val expectedOrder = Chunk("user_name", "user_age")
 
           assertTrue(fieldOrder == expectedOrder)
         case _ => assertTrue(false)
       }
-    }
+    },
   )
 }

@@ -7,10 +7,10 @@ import zio.schema.validation.*
 import zio.json.ast.Json
 import schemanator.annotations.*
 
-private[schemanator] object MetadataExtractor {
+private[schemanator] object MetadataExtractor:
 
   /** Extract metadata from ZIO Schema annotations */
-  def extractMetadata(annotations: Chunk[Any]): Map[String, Json] = {
+  def extractMetadata(annotations: Chunk[Any]): Map[String, Json] =
     var metadata = Map.empty[String, Json]
 
     annotations.foreach {
@@ -30,7 +30,7 @@ private[schemanator] object MetadataExtractor {
         metadata = metadata + ("writeOnly" -> Json.Bool(true))
       case dep: deprecated =>
         metadata = metadata + ("deprecated" -> Json.Bool(true))
-        if (dep.message.nonEmpty) metadata = metadata + ("x-deprecated-message" -> Json.Str(dep.message))
+        if dep.message.nonEmpty then metadata = metadata + ("x-deprecated-message" -> Json.Str(dep.message))
       case ex: examples =>
         // Type-erased examples - best effort conversion
         metadata = metadata + ("examples" -> Json.Arr(ex.values.map(Utilities.jsonFromAny)*))
@@ -46,11 +46,11 @@ private[schemanator] object MetadataExtractor {
       case mult: multipleOf =>
         metadata = metadata + ("multipleOf" -> Json.Num(mult.value))
       case min: minimum =>
-        if (min.exclusive) metadata = metadata + ("exclusiveMinimum" -> Json.Num(min.value))
-        else metadata = metadata + ("minimum"                        -> Json.Num(min.value))
+        if min.exclusive then metadata = metadata + ("exclusiveMinimum" -> Json.Num(min.value))
+        else metadata = metadata + ("minimum"                           -> Json.Num(min.value))
       case max: maximum =>
-        if (max.exclusive) metadata = metadata + ("exclusiveMaximum" -> Json.Num(max.value))
-        else metadata = metadata + ("maximum"                        -> Json.Num(max.value))
+        if max.exclusive then metadata = metadata + ("exclusiveMaximum" -> Json.Num(max.value))
+        else metadata = metadata + ("maximum"                           -> Json.Num(max.value))
       case minItems: minItems =>
         metadata = metadata + ("minItems" -> Json.Num(minItems.n))
       case maxItems: maxItems =>
@@ -61,18 +61,27 @@ private[schemanator] object MetadataExtractor {
         metadata = metadata + ("maxProperties" -> Json.Num(maxProps.n))
       case strEnum: stringEnum =>
         metadata = metadata + ("enum" -> Json.Arr(strEnum.values.map(Json.Str(_))*))
+      case _: allOf =>
+        // allOf is handled at the type level, not as metadata
+        ()
+      case _: anyOf =>
+        // anyOf is handled at the type level, not as metadata
+        ()
+      case _: not =>
+        // not is handled at the type level, not as metadata
+        ()
       case _ => ()
     }
 
     metadata
-  }
+  end extractMetadata
 
   /** Extract validation rules from ZIO Schema Validation */
-  def extractValidation(validation: Validation[?]): Map[String, Json] = {
+  def extractValidation(validation: Validation[?]): Map[String, Json] =
     import zio.schema.validation.*
 
     def extractFromBool[A](bool: Bool[Predicate[A]]): Map[String, Json] =
-      bool match {
+      bool match
         case Bool.And(left, right) =>
           extractFromBool(left) ++ extractFromBool(right)
 
@@ -86,7 +95,7 @@ private[schemanator] object MetadataExtractor {
           Map.empty
 
         case Bool.Leaf(predicate) =>
-          predicate match {
+          predicate match
             case Predicate.Str.MinLength(n) =>
               Map("minLength" -> Json.Num(n))
 
@@ -108,21 +117,17 @@ private[schemanator] object MetadataExtractor {
 
             case _ =>
               Map.empty
-          }
-      }
 
     extractFromBool(validation.bool)
-  }
+  end extractValidation
 
   /** Add metadata to a JSON schema */
-  def addMetadata(schema: Json, annotations: Chunk[Any]): Json = {
+  def addMetadata(schema: Json, annotations: Chunk[Any]): Json =
     val metadata = extractMetadata(annotations)
-    if (metadata.isEmpty) schema
+    if metadata.isEmpty then schema
     else
-      schema match {
+      schema match
         case Json.Obj(fields) =>
           Json.Obj((fields.toMap ++ metadata).toSeq*)
         case other => other
-      }
-  }
-}
+end MetadataExtractor
