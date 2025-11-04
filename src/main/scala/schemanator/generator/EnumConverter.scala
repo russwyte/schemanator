@@ -20,6 +20,12 @@ private[schemanator] object EnumConverter {
       }
       .getOrElse("type")
 
+    // Check if @anyOf annotation is present
+    val useAnyOf = e.annotations.exists {
+      case _: schemanator.annotations.anyOf => true
+      case _                                => false
+    }
+
     val caseSchemas = e.cases.map { case_ =>
       // Generate case schema inline, bypassing recursion detection
       // Enum cases shouldn't be treated as separate named types
@@ -49,7 +55,8 @@ private[schemanator] object EnumConverter {
         }
     }
 
-    val baseResult = Json.Obj("oneOf" -> Json.Arr(caseSchemas*))
+    val compositionKey = if (useAnyOf) "anyOf" else "oneOf"
+    val baseResult     = Json.Obj(compositionKey -> Json.Arr(caseSchemas*))
 
     if (hasNoDiscriminator)
       baseResult

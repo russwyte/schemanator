@@ -31,6 +31,14 @@ object SumTypesSpec extends ZIOSpecDefault {
     implicit val schema: Schema[Vehicle] = DeriveSchema.gen[Vehicle]
   }
 
+  @schemanator.annotations.anyOf()
+  sealed trait PaymentMethod
+  case class CreditCard(cardNumber: String)      extends PaymentMethod
+  case class BankTransfer(accountNumber: String) extends PaymentMethod
+  object PaymentMethod {
+    implicit val schema: Schema[PaymentMethod] = DeriveSchema.gen[PaymentMethod]
+  }
+
   def spec: Spec[Any, Nothing] = suite("SumTypes")(
     test("generates schema for enum") {
       val jsonSchema = Schema[Status].jsonSchemaAst
@@ -119,6 +127,27 @@ object SumTypesSpec extends ZIOSpecDefault {
           }
 
           assertTrue(hasDiscriminator)
+        case _ =>
+          assertTrue(false)
+      }
+    },
+    test("generates anyOf schema when @anyOf annotation is present") {
+      val jsonSchema = Schema[PaymentMethod].jsonSchemaAst
+
+      jsonSchema match {
+        case Json.Obj(fields) =>
+          val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
+          val hasAnyOf            = fieldsWithoutSchema.exists { case (k, _) => k == "anyOf" }
+          val hasOneOf            = fieldsWithoutSchema.exists { case (k, _) => k == "oneOf" }
+
+          // Extract the anyOf array
+          val anyOfOpt = fieldsWithoutSchema.collectFirst { case ("anyOf", arr: Json.Arr) =>
+            arr
+          }
+
+          val correctSize = anyOfOpt.exists(_.elements.size == 2)
+
+          assertTrue(hasAnyOf && !hasOneOf && anyOfOpt.isDefined && correctSize)
         case _ =>
           assertTrue(false)
       }

@@ -74,6 +74,7 @@ A comprehensive JSON Schema generator for ZIO Schema that converts Scala types t
 #### Enum/ADT Support
 - `@discriminatorName("field")` - Custom discriminator field name
 - `@noDiscriminator` - Disable discriminator for enums
+- `@anyOf()` - Use `anyOf` instead of `oneOf` for sum types (useful for OpenAI compatibility)
 
 ## Scala 2.13 vs Scala 3 Feature Differences
 
@@ -305,6 +306,34 @@ enum Vehicle derives Schema:
 // Generates oneOf with discriminator property
 val schema = Schema[Vehicle]
 println(schema.jsonSchemaPretty)
+```
+
+#### Using `anyOf` for OpenAI Compatibility
+
+OpenAI and some other APIs don't support `oneOf` but do support `anyOf`. You can use the `@anyOf` annotation:
+
+```scala
+import schemanator.annotations.*
+
+// Use @anyOf to generate anyOf instead of oneOf
+@anyOf()
+sealed trait PaymentMethod derives Schema
+case class CreditCard(cardNumber: String) extends PaymentMethod
+case class BankTransfer(accountNumber: String) extends PaymentMethod
+
+val schema = Schema[PaymentMethod]
+println(schema.jsonSchemaPretty)
+// Generates:
+// {
+//   "anyOf": [
+//     { "type": "object", "properties": { ... } },
+//     { "type": "object", "properties": { ... } }
+//   ]
+// }
+
+// Also works with Either types
+@anyOf()
+type Result = Either[Error, Success]
 ```
 
 #### Nested Types
