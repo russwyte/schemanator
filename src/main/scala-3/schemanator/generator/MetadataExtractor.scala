@@ -67,9 +67,9 @@ private[schemanator] object MetadataExtractor:
       case _: anyOf =>
         // anyOf is handled at the type level, not as metadata
         ()
-      case _: not =>
-        // not is handled at the type level, not as metadata
-        ()
+      // case _: not =>
+      //   // not is handled at the type level, not as metadata
+      //   ()
       case _ => ()
     }
 

@@ -39,6 +39,14 @@ object SumTypesSpec extends ZIOSpecDefault {
     implicit val schema: Schema[PaymentMethod] = DeriveSchema.gen[PaymentMethod]
   }
 
+  @schemanator.annotations.allOf()
+  sealed trait ApiResponse
+  case class SuccessResponse(data: String) extends ApiResponse
+  case class ErrorResponse(error: String)  extends ApiResponse
+  object ApiResponse {
+    implicit val schema: Schema[ApiResponse] = DeriveSchema.gen[ApiResponse]
+  }
+
   def spec: Spec[Any, Nothing] = suite("SumTypes")(
     test("generates schema for enum") {
       val jsonSchema = Schema[Status].jsonSchemaAst
@@ -139,6 +147,7 @@ object SumTypesSpec extends ZIOSpecDefault {
           val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
           val hasAnyOf            = fieldsWithoutSchema.exists { case (k, _) => k == "anyOf" }
           val hasOneOf            = fieldsWithoutSchema.exists { case (k, _) => k == "oneOf" }
+          val hasDiscriminator    = fieldsWithoutSchema.exists { case (k, _) => k == "discriminator" }
 
           // Extract the anyOf array
           val anyOfOpt = fieldsWithoutSchema.collectFirst { case ("anyOf", arr: Json.Arr) =>
@@ -147,7 +156,30 @@ object SumTypesSpec extends ZIOSpecDefault {
 
           val correctSize = anyOfOpt.exists(_.elements.size == 2)
 
-          assertTrue(hasAnyOf && !hasOneOf && anyOfOpt.isDefined && correctSize)
+          // anyOf should NOT have discriminator (per JSON Schema semantics and OpenAI requirements)
+          assertTrue(hasAnyOf && !hasOneOf && !hasDiscriminator && anyOfOpt.isDefined && correctSize)
+        case _ =>
+          assertTrue(false)
+      }
+    },
+    test("generates allOf schema when @allOf annotation is present") {
+      val jsonSchema = Schema[ApiResponse].jsonSchemaAst
+
+      jsonSchema match {
+        case Json.Obj(fields) =>
+          val fieldsWithoutSchema = fields.filter(_._1 != "$schema")
+          val hasAllOf            = fieldsWithoutSchema.exists { case (k, _) => k == "allOf" }
+          val hasOneOf            = fieldsWithoutSchema.exists { case (k, _) => k == "oneOf" }
+          val hasAnyOf            = fieldsWithoutSchema.exists { case (k, _) => k == "anyOf" }
+
+          // Extract the allOf array
+          val allOfOpt = fieldsWithoutSchema.collectFirst { case ("allOf", arr: Json.Arr) =>
+            arr
+          }
+
+          val correctSize = allOfOpt.exists(_.elements.size == 2)
+
+          assertTrue(hasAllOf && !hasOneOf && !hasAnyOf && allOfOpt.isDefined && correctSize)
         case _ =>
           assertTrue(false)
       }

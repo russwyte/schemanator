@@ -75,6 +75,7 @@ A comprehensive JSON Schema generator for ZIO Schema that converts Scala types t
 - `@discriminatorName("field")` - Custom discriminator field name
 - `@noDiscriminator` - Disable discriminator for enums
 - `@anyOf()` - Use `anyOf` instead of `oneOf` for sum types (useful for OpenAI compatibility)
+- `@allOf()` - Use `allOf` instead of `oneOf` for sum types (intersection semantics)
 
 ## Scala 2.13 vs Scala 3 Feature Differences
 
@@ -310,7 +311,7 @@ println(schema.jsonSchemaPretty)
 
 #### Using `anyOf` for OpenAI Compatibility
 
-OpenAI and some other APIs don't support `oneOf` but do support `anyOf`. You can use the `@anyOf` annotation:
+OpenAI and some other APIs don't support `oneOf` but do support `anyOf`. The `@anyOf` annotation generates JSON Schema-compliant `anyOf` schemas:
 
 ```scala
 import schemanator.annotations.*
@@ -326,8 +327,8 @@ println(schema.jsonSchemaPretty)
 // Generates:
 // {
 //   "anyOf": [
-//     { "type": "object", "properties": { ... } },
-//     { "type": "object", "properties": { ... } }
+//     { "type": "object", "properties": { "cardNumber": { "type": "string" } }, "required": ["cardNumber"] },
+//     { "type": "object", "properties": { "accountNumber": { "type": "string" } }, "required": ["accountNumber"] }
 //   ]
 // }
 
@@ -335,6 +336,38 @@ println(schema.jsonSchemaPretty)
 @anyOf()
 type Result = Either[Error, Success]
 ```
+
+**Important:** `@anyOf` automatically disables discriminators, following JSON Schema semantics:
+- **`oneOf`** = "exactly one must match" → uses discriminators to identify which variant
+- **`anyOf`** = "one or more can match" → no discriminator needed (per JSON Schema spec)
+
+This makes `@anyOf` fully compatible with OpenAI's structured output requirements, which expect clean, standalone schemas without discriminators.
+
+#### Using `allOf` for Intersection Semantics
+
+The `@allOf` annotation generates schemas with intersection semantics (all schemas must match):
+
+```scala
+import schemanator.annotations.*
+
+// Use @allOf to express that a value must satisfy ALL alternatives
+@allOf()
+sealed trait ApiResponse derives Schema
+case class SuccessResponse(data: String) extends ApiResponse
+case class ErrorResponse(error: String) extends ApiResponse
+
+val schema = Schema[ApiResponse]
+println(schema.jsonSchemaPretty)
+// Generates:
+// {
+//   "allOf": [
+//     { "type": "object", "properties": { "data": { "type": "string" } } },
+//     { "type": "object", "properties": { "error": { "type": "string" } } }
+//   ]
+// }
+```
+
+**Note:** `allOf` represents intersection semantics where a value must validate against ALL schemas. This is less common for sum types but useful for expressing complex validation requirements.
 
 #### Nested Types
 
