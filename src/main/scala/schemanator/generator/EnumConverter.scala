@@ -20,11 +20,28 @@ private[schemanator] object EnumConverter {
       }
       .getOrElse("type")
 
-    // Check if @anyOf annotation is present
-    val useAnyOf = e.annotations.exists {
+    // Check which composition annotation is present (validate no conflicts)
+    val hasAnyOf = e.annotations.exists {
       case _: schemanator.annotations.anyOf => true
       case _                                => false
     }
+    val hasAllOf = e.annotations.exists {
+      case _: schemanator.annotations.allOf => true
+      case _                                => false
+    }
+
+    // Error if both are present - TODO: revisit error handling to use Either/ZIO
+    if (hasAnyOf && hasAllOf) {
+      throw new IllegalArgumentException(
+        "Cannot use both @anyOf and @allOf annotations on the same type. Choose one composition strategy."
+      )
+    }
+
+    val compositionKey = if (hasAnyOf) "anyOf" else if (hasAllOf) "allOf" else "oneOf"
+
+    // anyOf implies no discriminator per JSON Schema semantics and OpenAI requirements
+    // Discriminators are for oneOf (exactly one match), not anyOf (one or more matches)
+    val shouldUseDiscriminator = !hasNoDiscriminator && !hasAnyOf
 
     val caseSchemas = e.cases.map { case_ =>
       // Generate case schema inline, bypassing recursion detection
@@ -32,7 +49,7 @@ private[schemanator] object EnumConverter {
       val baseSchema = TypeConverters.schemaToJsonSchema(case_.schema, ctx, checkRecursion = false)
       val caseName   = Utilities.getCaseName(case_)
 
-      if (hasNoDiscriminator)
+      if (!shouldUseDiscriminator)
         baseSchema
       else
         // Add discriminator property to each case
@@ -55,10 +72,9 @@ private[schemanator] object EnumConverter {
         }
     }
 
-    val compositionKey = if (useAnyOf) "anyOf" else "oneOf"
-    val baseResult     = Json.Obj(compositionKey -> Json.Arr(caseSchemas*))
+    val baseResult = Json.Obj(compositionKey -> Json.Arr(caseSchemas*))
 
-    if (hasNoDiscriminator)
+    if (!shouldUseDiscriminator)
       baseResult
     else {
       // Add discriminator object per JSON Schema spec (baseResult is always Json.Obj)

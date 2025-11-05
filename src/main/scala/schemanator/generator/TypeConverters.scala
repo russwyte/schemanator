@@ -169,21 +169,28 @@ private[schemanator] object TypeConverters {
     val leftSchema  = schemaToJsonSchema(either.left, ctx)
     val rightSchema = schemaToJsonSchema(either.right, ctx)
 
-    // Check if @anyOf annotation is present
-    val useAnyOf = either.annotations.exists {
+    // Check which composition annotation is present (validate no conflicts)
+    val hasAnyOf = either.annotations.exists {
       case _: schemanator.annotations.anyOf => true
       case _                                => false
     }
+    val hasAllOf = either.annotations.exists {
+      case _: schemanator.annotations.allOf => true
+      case _                                => false
+    }
 
-    if (useAnyOf) {
-      Json.Obj(
-        "anyOf" -> Json.Arr(leftSchema, rightSchema)
-      )
-    } else {
-      Json.Obj(
-        "oneOf" -> Json.Arr(leftSchema, rightSchema)
+    // Error if both are present - TODO: revisit error handling to use Either/ZIO
+    if (hasAnyOf && hasAllOf) {
+      throw new IllegalArgumentException(
+        "Cannot use both @anyOf and @allOf annotations on the same type. Choose one composition strategy."
       )
     }
+
+    val compositionKey = if (hasAnyOf) "anyOf" else if (hasAllOf) "allOf" else "oneOf"
+
+    Json.Obj(
+      compositionKey -> Json.Arr(leftSchema, rightSchema)
+    )
   }
 
   /** Flatten nested tuples */
