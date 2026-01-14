@@ -4,7 +4,7 @@
 
 A comprehensive JSON Schema generator for ZIO Schema that converts Scala types to [JSON Schema Draft 2020-12](https://json-schema.org/draft/2020-12/schema).
 
-**Cross-compiled for Scala 2.13.16 and Scala 3.7.3**
+**Cross-compiled for Scala 2.13.16+ and Scala 3.3+**
 
 ## ✨ Highlights
 
@@ -525,9 +525,9 @@ sbt compile
 # Run tests for both versions
 sbt test
 
-# Test specific Scala version
+# Test specific Scala version (use any compatible version)
 sbt ++2.13.16 test
-sbt ++3.7.3 test
+sbt ++3.3.6 test
 
 # Cross-compile and publish
 sbt +publishLocal
