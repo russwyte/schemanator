@@ -1,6 +1,6 @@
 import xerial.sbt.Sonatype.sonatypeCentralHost
 
-val scala3Version    = "3.7.3"
+val scala3Version    = "3.3.6"
 val scala213Version  = "2.13.16"
 val zioVersion       = "2.1.21"
 val zioSchemaVersion = "1.7.5"
