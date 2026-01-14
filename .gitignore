@@ -27,6 +27,7 @@ CLAUDE.md
 .bloop/
 .metals/
 metals.sbt
+.mcp.json
 
 # IDEA
 .idea
